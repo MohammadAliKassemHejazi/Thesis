@@ -1,0 +1,31 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: microservices-ingress
+spec:
+  ingressClassName: {{ .Values.ingress.className }}
+  rules:
+    {{- if .Values.productService.ingress.enabled }}
+    - host: {{ .Values.productService.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.productService.name }}
+                port:
+                  number: {{ .Values.productService.service.port }}
+    {{- end }}
+    {{- if .Values.translationService.ingress.enabled }}
+    - host: {{ .Values.translationService.ingress.host }}
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: {{ .Values.translationService.name }}
+                port:
+                  number: {{ .Values.translationService.service.port }}
+    {{- end }}
