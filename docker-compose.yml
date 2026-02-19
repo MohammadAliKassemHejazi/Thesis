@@ -82,19 +82,6 @@ services:
       retries: 3
       start_period: 20s
 
-  # Translation Review UI
-  translation-review-ui:
-    build:
-      context: ./translation-review-ui
-      dockerfile: Dockerfile
-    container_name: translation-review-ui
-    ports:
-      - "8080:80"
-    depends_on:
-      - translation-service
-    environment:
-      - VITE_API_URL=http://localhost:3001
-
 volumes:
   product_db_data:
     driver: local
