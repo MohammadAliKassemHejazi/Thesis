@@ -1,0 +1,108 @@
+version: '3.8'
+
+services:
+  # Product Database
+  product-db:
+    image: postgres:15-alpine
+    container_name: product-db
+    environment:
+      POSTGRES_USER: product_user
+      POSTGRES_PASSWORD: product_pass
+      POSTGRES_DB: products_db
+    volumes:
+      - product_db_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U product_user -d products_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Translation Database
+  translation-db:
+    image: postgres:15-alpine
+    container_name: translation-db
+    environment:
+      POSTGRES_USER: translation_user
+      POSTGRES_PASSWORD: translation_pass
+      POSTGRES_DB: translations_db
+    volumes:
+      - translation_db_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U translation_user -d translations_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Translation Microservice
+  translation-service:
+    build:
+      context: ./translation-service
+      dockerfile: Dockerfile
+    container_name: translation-service
+    environment:
+      DATABASE_URL: postgresql://translation_user:translation_pass@translation-db:5432/translations_db
+    ports:
+      - "3001:3001"
+    depends_on:
+      translation-db:
+        condition: service_healthy
+    volumes:
+      - translation_models:/root/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # Product Service
+  product-service:
+    build:
+      context: ./product-service
+      dockerfile: Dockerfile
+    container_name: product-service
+    environment:
+      DATABASE_URL: postgresql://product_user:product_pass@product-db:5432/products_db
+      TRANSLATION_SERVICE_URL: http://translation-service:3001
+    ports:
+      - "3000:3000"
+    depends_on:
+      product-db:
+        condition: service_healthy
+      translation-service:
+        condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+
+  # Translation Review UI
+  translation-review-ui:
+    build:
+      context: ./translation-review-ui
+      dockerfile: Dockerfile
+    container_name: translation-review-ui
+    ports:
+      - "8080:80"
+    depends_on:
+      - translation-service
+    environment:
+      - VITE_API_URL=http://localhost:3001
+
+volumes:
+  product_db_data:
+    driver: local
+  translation_db_data:
+    driver: local
+  translation_models:
+    driver: local
+
+networks:
+  default:
+    name: microservices-network
