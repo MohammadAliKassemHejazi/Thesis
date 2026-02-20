@@ -3,29 +3,29 @@ kind: Ingress
 metadata:
   name: microservices-ingress
 spec:
-  ingressClassName: {{ .Values.ingress.className }}
+  ingressClassName: "{{ .Values.ingress.className }}"
   rules:
-    {{- if .Values.productService.ingress.enabled }}
-    - host: {{ .Values.productService.ingress.host }}
+    # {{- if .Values.productService.ingress.enabled }}
+    - host: "{{ .Values.productService.ingress.host }}"
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.productService.name }}
+                name: "{{ .Values.productService.name }}"
                 port:
                   number: {{ .Values.productService.service.port }}
-    {{- end }}
-    {{- if .Values.translationService.ingress.enabled }}
-    - host: {{ .Values.translationService.ingress.host }}
+    # {{- end }}
+    # {{- if .Values.translationService.ingress.enabled }}
+    - host: "{{ .Values.translationService.ingress.host }}"
       http:
         paths:
           - path: /
             pathType: Prefix
             backend:
               service:
-                name: {{ .Values.translationService.name }}
+                name: "{{ .Values.translationService.name }}"
                 port:
                   number: {{ .Values.translationService.service.port }}
-    {{- end }}
+    # {{- end }}
