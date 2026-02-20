@@ -1,7 +1,14 @@
-from transformers import MarianMTModel, MarianTokenizer
+from transformers import MarianMTModel, MarianTokenizer, MarianConfig
 import logging
 
 logger = logging.getLogger(__name__)
+
+# Filter out the tied weights warning which is persistent even with correct config
+class IgnoreTiedWeightsWarning(logging.Filter):
+    def filter(self, record):
+        return "The tied weights mapping and config for this model specifies to tie" not in record.getMessage()
+
+logging.getLogger("transformers.modeling_utils").addFilter(IgnoreTiedWeightsWarning())
 
 class TranslationEngine:
     def __init__(self):
@@ -29,7 +36,13 @@ class TranslationEngine:
         
         try:
             self.tokenizers[target_lang] = MarianTokenizer.from_pretrained(model_name)
-            self.models[target_lang] = MarianMTModel.from_pretrained(model_name)
+
+            # Load config and disable tied weights to prevent warnings/issues
+            # The model checkpoint has separate weights but config says they are tied.
+            config = MarianConfig.from_pretrained(model_name)
+            config.tie_word_embeddings = False
+
+            self.models[target_lang] = MarianMTModel.from_pretrained(model_name, config=config)
             logger.info(f"Successfully loaded model for {target_lang}")
         except Exception as e:
             logger.error(f"Failed to load model for {target_lang}: {str(e)}")
