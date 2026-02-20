@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Translation Dashboard</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        .loader {
+            border-top-color: #3498db;
+            -webkit-animation: spinner 1.5s linear infinite;
+            animation: spinner 1.5s linear infinite;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-sans text-gray-900">
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+
+        // --- Icons (SVG Components) ---
+        const RefreshIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21.5 2v6h-6M21.34 5.5A10 10 0 1 1 11.26 2.88"/></svg>
+        );
+        const EditIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+        );
+        const CheckCircleIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-green-500"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        );
+        const XCircleIcon = () => (
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-red-500"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        );
+
+        // --- Components ---
+
+        const StatsCard = ({ title, value, subtext, color = "blue" }) => (
+            <div className={`bg-white p-6 rounded-lg shadow-sm border border-gray-100 flex flex-col`}>
+                <h3 className="text-gray-500 text-sm font-medium uppercase tracking-wider">{title}</h3>
+                <div className="mt-2 flex items-baseline">
+                    <span className={`text-3xl font-bold text-${color}-600`}>{value}</span>
+                    {subtext && <span className="ml-2 text-sm text-gray-500">{subtext}</span>}
+                </div>
+            </div>
+        );
+
+        const Badge = ({ status }) => {
+            const isEdited = status === true || status === 'Edited';
+            return (
+                <span className={`px-2 py-1 text-xs font-semibold rounded-full ${isEdited ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'}`}>
+                    {isEdited ? 'Edited' : 'Pending'}
+                </span>
+            );
+        };
+
+        const EditModal = ({ isOpen, onClose, translation, onSave }) => {
+            const [text, setText] = useState('');
+            const [feedback, setFeedback] = useState('');
+            const [isSaving, setIsSaving] = useState(false);
+
+            useEffect(() => {
+                if (translation) {
+                    setText(translation.edited_text || translation.translated_text);
+                    setFeedback(translation.feedback || '');
+                }
+            }, [translation]);
+
+            if (!isOpen || !translation) return null;
+
+            const handleSave = async () => {
+                setIsSaving(true);
+                try {
+                    await onSave(translation.id, text, feedback);
+                    onClose();
+                } catch (error) {
+                    console.error("Failed to save:", error);
+                    alert("Failed to save edit.");
+                } finally {
+                    setIsSaving(false);
+                }
+            };
+
+            return (
+                <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
+                        <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+                            <h3 className="text-lg font-medium text-gray-900">Edit Translation</h3>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
+                                <span className="text-2xl">&times;</span>
+                            </button>
+                        </div>
+                        <div className="p-6 space-y-4">
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Original Text ({translation.language})</label>
+                                <div className="p-3 bg-gray-50 rounded border border-gray-200 text-gray-800 text-sm">
+                                    {translation.original_text}
+                                </div>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Translated Text</label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-32 resize-none"
+                                    value={text}
+                                    onChange={(e) => setText(e.target.value)}
+                                ></textarea>
+                            </div>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Feedback / Notes (Optional)</label>
+                                <textarea
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none"
+                                    value={feedback}
+                                    onChange={(e) => setFeedback(e.target.value)}
+                                    placeholder="Add context or reason for edit..."
+                                ></textarea>
+                            </div>
+                        </div>
+                        <div className="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
+                            <button
+                                onClick={onClose}
+                                className="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={isSaving}
+                                className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 flex items-center"
+                            >
+                                {isSaving ? (
+                                    <>
+                                        <div className="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-4 w-4 mr-2"></div>
+                                        Saving...
+                                    </>
+                                ) : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const Dashboard = () => {
+            const [stats, setStats] = useState(null);
+            const [translations, setTranslations] = useState([]);
+            const [health, setHealth] = useState(null);
+            const [loading, setLoading] = useState(true);
+            const [editingTranslation, setEditingTranslation] = useState(null);
+
+            // Filters
+            const [langFilter, setLangFilter] = useState('all');
+            const [statusFilter, setStatusFilter] = useState('all');
+            const [searchTerm, setSearchTerm] = useState('');
+
+            const fetchData = async () => {
+                setLoading(true);
+                try {
+                    const [statsRes, healthRes, transRes] = await Promise.all([
+                        fetch('/translations/statistics'),
+                        fetch('/health'),
+                        fetch('/translations?limit=1000') // Fetching plenty for client-side filtering
+                    ]);
+
+                    if (statsRes.ok) setStats(await statsRes.json());
+                    if (healthRes.ok) setHealth(await healthRes.json());
+                    if (transRes.ok) setTranslations(await transRes.json());
+                } catch (error) {
+                    console.error("Failed to fetch data:", error);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => {
+                fetchData();
+            }, []);
+
+            const handleSaveEdit = async (id, editedText, feedback) => {
+                const res = await fetch(`/translations/${id}/edit`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        edited_text: editedText,
+                        feedback: feedback,
+                        edited_by: 'dashboard-admin'
+                    })
+                });
+
+                if (!res.ok) throw new Error("Update failed");
+
+                // Update local state
+                const updated = await res.json();
+                setTranslations(prev => prev.map(t => t.id === id ? updated.translation : t));
+
+                // Refresh stats to keep counts accurate
+                const statsRes = await fetch('/translations/statistics');
+                if (statsRes.ok) setStats(await statsRes.json());
+            };
+
+            const filteredTranslations = useMemo(() => {
+                return translations.filter(t => {
+                    const matchesLang = langFilter === 'all' || t.language === langFilter;
+                    const matchesStatus = statusFilter === 'all' ||
+                        (statusFilter === 'edited' && t.is_edited) ||
+                        (statusFilter === 'pending' && !t.is_edited);
+                    const matchesSearch = t.original_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                                          t.translated_text.toLowerCase().includes(searchTerm.toLowerCase());
+                    return matchesLang && matchesStatus && matchesSearch;
+                });
+            }, [translations, langFilter, statusFilter, searchTerm]);
+
+            const uniqueLanguages = useMemo(() => {
+                const langs = new Set(translations.map(t => t.language));
+                return Array.from(langs);
+            }, [translations]);
+
+            return (
+                <div className="container mx-auto px-4 py-8 max-w-7xl">
+                    {/* Header */}
+                    <div className="flex justify-between items-center mb-8">
+                        <div>
+                            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Translation Dashboard</h1>
+                            <p className="mt-1 text-sm text-gray-500">Monitor and refine AI translations</p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <div className={`flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium ${health?.status === 'healthy' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+                                {health?.status === 'healthy' ? <CheckCircleIcon /> : <XCircleIcon />}
+                                <span>{health?.status === 'healthy' ? 'System Healthy' : 'System Issues'}</span>
+                            </div>
+                            <button
+                                onClick={fetchData}
+                                className="p-2 text-gray-400 hover:text-gray-600 transition-colors rounded-full hover:bg-gray-100"
+                                title="Refresh Data"
+                            >
+                                <RefreshIcon />
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Stats Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+                        <StatsCard title="Total Translations" value={stats?.total_translations || 0} color="blue" />
+                        <StatsCard title="Pending Review" value={stats?.pending_review || 0} color="yellow" />
+                        <StatsCard title="Edited by Humans" value={stats?.edited_translations || 0} subtext={`(${stats?.edit_rate || 0}%)`} color="green" />
+                        <StatsCard title="Models Loaded" value={health?.models_loaded || 0} subtext={`/ ${health?.supported_languages?.length || 0}`} color="purple" />
+                    </div>
+
+                    {/* Main Content Area */}
+                    <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+                        {/* Toolbar */}
+                        <div className="p-4 border-b border-gray-200 bg-gray-50 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                            <div className="flex items-center space-x-4">
+                                <h2 className="text-lg font-semibold text-gray-800">Translations</h2>
+                                <span className="bg-gray-200 text-gray-600 px-2 py-0.5 rounded-full text-xs font-medium">{filteredTranslations.length}</span>
+                            </div>
+
+                            <div className="flex flex-col md:flex-row gap-3">
+                                <input
+                                    type="text"
+                                    placeholder="Search text..."
+                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 w-full md:w-64"
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+
+                                <select
+                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                    value={langFilter}
+                                    onChange={(e) => setLangFilter(e.target.value)}
+                                >
+                                    <option value="all">All Languages</option>
+                                    {uniqueLanguages.map(lang => (
+                                        <option key={lang} value={lang}>{lang.toUpperCase()}</option>
+                                    ))}
+                                </select>
+
+                                <select
+                                    className="px-3 py-2 border border-gray-300 rounded-md text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
+                                    value={statusFilter}
+                                    onChange={(e) => setStatusFilter(e.target.value)}
+                                >
+                                    <option value="all">All Status</option>
+                                    <option value="pending">Pending</option>
+                                    <option value="edited">Edited</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        {/* Table */}
+                        <div className="overflow-x-auto">
+                            <table className="min-w-full divide-y divide-gray-200">
+                                <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">ID</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Lang</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Original Text</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-1/3">Translation</th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">Status</th>
+                                        <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="bg-white divide-y divide-gray-200">
+                                    {loading ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                <div className="flex justify-center items-center">
+                                                    <div className="loader ease-linear rounded-full border-2 border-t-2 border-gray-200 h-6 w-6 mr-3"></div>
+                                                    Loading translations...
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : filteredTranslations.length === 0 ? (
+                                        <tr>
+                                            <td colSpan="6" className="px-6 py-12 text-center text-gray-500">
+                                                No translations found matching your filters.
+                                            </td>
+                                        </tr>
+                                    ) : (
+                                        filteredTranslations.map((t) => (
+                                            <tr key={t.id} className="hover:bg-gray-50 transition-colors">
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">#{t.id}</td>
+                                                <td className="px-6 py-4 whitespace-nowrap">
+                                                    <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 uppercase">
+                                                        {t.language}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">{t.original_text}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">
+                                                    {t.is_edited ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="text-green-700 font-medium">{t.edited_text}</span>
+                                                            <span className="text-xs text-gray-400 line-through mt-1">{t.translated_text}</span>
+                                                        </div>
+                                                    ) : (
+                                                        <span>{t.translated_text}</span>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <Badge status={t.is_edited} />
+                                                </td>
+                                                <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                                    <button
+                                                        onClick={() => setEditingTranslation(t)}
+                                                        className="text-blue-600 hover:text-blue-900 p-1 hover:bg-blue-50 rounded"
+                                                        title="Edit Translation"
+                                                    >
+                                                        <EditIcon />
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                        ))
+                                    )}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <EditModal
+                        isOpen={!!editingTranslation}
+                        onClose={() => setEditingTranslation(null)}
+                        translation={editingTranslation}
+                        onSave={handleSaveEdit}
+                    />
+                </div>
+            );
+        };
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<Dashboard />);
+    </script>
+</body>
+</html>

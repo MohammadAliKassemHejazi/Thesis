@@ -1,9 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, validator
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
+import os
+from pathlib import Path
 
 from app.database import get_db, engine, SessionLocal
 from app.models import Base, Translation
@@ -244,6 +247,14 @@ async def get_translation_statistics(db: Session = Depends(get_db)):
         "pending_review": pending,
         "edit_rate": round((edited / total * 100), 2) if total > 0 else 0
     }
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    """
+    Serve the translation dashboard
+    """
+    html_path = Path(__file__).parent / "templates" / "dashboard.html"
+    return html_path.read_text()
 
 if __name__ == "__main__":
     import uvicorn
