@@ -38,11 +38,11 @@ translationService:
     host: translation.local
   resources:
     limits:
-      cpu: 1000m
-      memory: 1Gi  # PyTorch models might need more
+      cpu: 2000m
+      memory: 4Gi  # PyTorch models might need more
     requests:
-      cpu: 200m
-      memory: 512Mi
+      cpu: 500m
+      memory: 2Gi
 
 # Product Database Configuration
 productDb:
