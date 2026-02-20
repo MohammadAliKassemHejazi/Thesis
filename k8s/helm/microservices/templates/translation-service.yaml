@@ -48,6 +48,11 @@ spec:
                   key: DB_NAME
             - name: DATABASE_URL
               value: "postgresql://$(DB_USER):$(DB_PASS)@$(DB_HOST):$(DB_PORT)/$(DB_NAME)"
+            - name: HF_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: translation-service-secret
+                  key: hfToken
           resources:
             requests:
               cpu: {{ .Values.translationService.resources.requests.cpu }}

@@ -43,6 +43,7 @@ translationService:
     requests:
       cpu: 200m
       memory: 2Gi
+  hfToken: ""
 
 # Product Database Configuration
 productDb:
