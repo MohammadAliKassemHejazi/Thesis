@@ -20,17 +20,12 @@ An Ingress Controller is required to route traffic from your local domains to th
 
 **Using Helm (Recommended):**
 ```bash
-helm upgrade --install ingress-nginx ingress-nginx \
-  --repo https://kubernetes.github.io/ingress-nginx \
-  --namespace ingress-nginx --create-namespace
+kubectl delete validatingwebhookconfiguration ingress-nginx-admission; helm upgrade --install ingress-nginx ingress-nginx --repo https://kubernetes.github.io/ingress-nginx --namespace ingress-nginx --create-namespace
 ```
 
 Wait for the ingress controller pod to be ready:
 ```bash
-kubectl wait --namespace ingress-nginx \
-  --for=condition=ready pod \
-  --selector=app.kubernetes.io/component=controller \
-  --timeout=120s
+kubectl wait --namespace ingress-nginx --for=condition=ready pod --selector=app.kubernetes.io/component=controller --timeout=120s
 ```
 
 ## 2. Build Docker Images
@@ -51,18 +46,6 @@ docker build -t product-service:latest -f product-service/Dockerfile .
 docker build -t translation-service:latest -f translation-service/Dockerfile .
 ```
 
-**For Kind:**
-You need to load the images into the Kind cluster after building.
-
-```bash
-# Build
-docker build -t product-service:latest -f product-service/Dockerfile .
-docker build -t translation-service:latest -f translation-service/Dockerfile .
-
-# Load into Kind
-kind load docker-image product-service:latest
-kind load docker-image translation-service:latest
-```
 
 ## 3. configure Local Domains
 
