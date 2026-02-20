@@ -8,6 +8,7 @@ productService:
   image:
     repository: product-service
     tag: latest
+    pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 3000
@@ -28,6 +29,7 @@ translationService:
   image:
     repository: translation-service
     tag: latest
+    pullPolicy: IfNotPresent
   service:
     type: ClusterIP
     port: 3001
