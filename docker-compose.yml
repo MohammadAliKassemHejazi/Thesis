@@ -45,7 +45,7 @@ services:
     container_name: translation-service
     environment:
       DATABASE_URL: postgresql://translation_user:translation_pass@translation-db:5432/translations_db
-      HF_TOKEN: ${HF_TOKEN}
+      HF_TOKEN: ${HF_TOKEN:-}
     ports:
       - "3001:3001"
     depends_on:
