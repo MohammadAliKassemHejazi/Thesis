@@ -39,10 +39,10 @@ translationService:
   resources:
     limits:
       cpu: 1000m
-      memory: 1Gi  # PyTorch models might need more
+      memory: 4Gi  # PyTorch models might need more
     requests:
       cpu: 200m
-      memory: 512Mi
+      memory: 2Gi
 
 # Product Database Configuration
 productDb:
