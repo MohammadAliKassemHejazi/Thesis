@@ -37,10 +37,10 @@ class TranslationEngine:
         try:
             self.tokenizers[target_lang] = MarianTokenizer.from_pretrained(model_name)
 
-            # Load config and disable tied weights to prevent warnings/issues
-            # The model checkpoint has separate weights but config says they are tied.
+            # Use default config (tied weights) for correct model behavior.
+            # The "IgnoreTiedWeightsWarning" filter above handles the benign warning
+            # about shared/separate weights in checkpoints.
             config = MarianConfig.from_pretrained(model_name)
-            config.tie_word_embeddings = False
 
             self.models[target_lang] = MarianMTModel.from_pretrained(model_name, config=config)
             logger.info(f"Successfully loaded model for {target_lang}")
