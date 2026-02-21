@@ -217,6 +217,30 @@ async def delete_translation(
 
     return {"message": "Translation deleted"}
 
+@app.delete("/translations/product/{original_request_id}")
+async def delete_translations_by_product(
+    original_request_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete all translations for a specific product/request ID"""
+    translations = db.query(Translation).filter(
+        Translation.original_request_id == original_request_id
+    ).all()
+
+    if not translations:
+        # If no translations found, we can still consider this a success (idempotent)
+        # or return 404. Given the requirement is to "ensure deleted", success is better.
+        return {"message": "No translations found for this product", "deleted_count": 0}
+
+    deleted_count = 0
+    for translation in translations:
+        db.delete(translation)
+        deleted_count += 1
+
+    db.commit()
+
+    return {"message": "All translations for product deleted", "deleted_count": deleted_count}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=3001)

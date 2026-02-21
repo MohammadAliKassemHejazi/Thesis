@@ -105,6 +105,49 @@ def test_multiple_products():
     products_list = response.json()
     print(json.dumps(products_list, indent=2))
 
+def test_delete_sync(product_id):
+    print_section("6. Testing Synchronized Deletion")
+
+    # Verify translations exist before deletion
+    print(f"\n🔍 Verifying translations exist for product {product_id}...")
+    response = requests.get(f"{TRANSLATION_SERVICE}/translations/{product_id}")
+    if response.status_code == 200:
+        print("✅ Translations found.")
+    else:
+        print("❌ Error: Translations not found before deletion!")
+        return
+
+    # Delete the product
+    print(f"\n🗑️  Deleting product {product_id}...")
+    response = requests.delete(f"{PRODUCT_SERVICE}/products/{product_id}")
+    print(json.dumps(response.json(), indent=2))
+
+    if response.status_code != 200:
+        print("❌ Error: Failed to delete product!")
+        return
+
+    # Verify product is gone
+    print(f"\n🔍 Verifying product {product_id} is deleted...")
+    response = requests.get(f"{PRODUCT_SERVICE}/products/{product_id}")
+    if response.status_code == 404:
+        print("✅ Product correctly deleted (404 Not Found).")
+    else:
+        print(f"❌ Error: Product still exists! Status: {response.status_code}")
+
+    # Verify translations are gone
+    print(f"\n🔍 Verifying translations for product {product_id} are deleted...")
+    response = requests.get(f"{TRANSLATION_SERVICE}/translations/{product_id}")
+
+    # Depending on implementation, it might return 404 or empty list.
+    # Current implementation returns 404 if not found.
+    if response.status_code == 404:
+        print("✅ Translations correctly deleted (404 Not Found).")
+    elif response.status_code == 200 and len(response.json()) == 0:
+        print("✅ Translations correctly deleted (Empty List).")
+    else:
+        print(f"❌ Error: Translations still exist! Status: {response.status_code}")
+        print(json.dumps(response.json(), indent=2))
+
 def main():
     print("\n" + "🚀 " * 20)
     print("MICROSERVICES TRANSLATION SYSTEM - TEST SUITE")
@@ -117,6 +160,7 @@ def main():
         test_translations(product_id)
         test_direct_translation_access(product_id)
         test_multiple_products()
+        test_delete_sync(product_id)
         
         print_section("✅ All Tests Completed Successfully!")
         
