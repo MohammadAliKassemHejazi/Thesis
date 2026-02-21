@@ -1,10 +1,12 @@
 from fastapi import FastAPI, HTTPException, Depends
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import logging
+from pathlib import Path
 
-from app.database import get_db, engine
+from app.database import get_db, engine, check_and_migrate_db
 from app.models import Base, Translation
 from app.translator import translation_engine
 
@@ -33,12 +35,22 @@ class TranslationResponse(BaseModel):
     language: str
     original_text: str
     translated_text: str
+    is_edited: bool = False
+    edited_text: Optional[str] = None
+    feedback: Optional[str] = None
+
+class EditRequest(BaseModel):
+    edited_text: str
+    feedback: Optional[str] = None
 
 @app.on_event("startup")
 async def startup_event():
-    """Load AI models on startup"""
+    """Load AI models on startup and migrate DB"""
     logger.info("Starting Translation Microservice...")
     try:
+        # Check and migrate database
+        check_and_migrate_db(engine)
+
         # Preload models (optional - can be lazy loaded instead)
         # translation_engine.preload_all_models()
         logger.info("Translation service ready")
@@ -60,6 +72,32 @@ async def health_check():
         "status": "healthy",
         "models_loaded": len(translation_engine.models),
         "supported_languages": list(translation_engine.supported_languages.keys())
+    }
+
+@app.get("/dashboard", response_class=HTMLResponse)
+async def dashboard():
+    """Serve the dashboard HTML"""
+    dashboard_path = Path("app/templates/dashboard.html")
+    if not dashboard_path.exists():
+        raise HTTPException(status_code=404, detail="Dashboard template not found")
+    return dashboard_path.read_text(encoding="utf-8")
+
+@app.get("/translations/statistics")
+async def get_statistics(db: Session = Depends(get_db)):
+    """Get translation statistics"""
+    total = db.query(Translation).count()
+    edited = db.query(Translation).filter(Translation.is_edited == True).count()
+    pending = total - edited
+
+    edit_rate = 0
+    if total > 0:
+        edit_rate = round((edited / total) * 100, 1)
+
+    return {
+        "total_translations": total,
+        "pending_review": pending,
+        "edited_translations": edited,
+        "edit_rate": edit_rate
     }
 
 @app.post("/translate", response_model=List[TranslationResponse])
@@ -143,6 +181,41 @@ async def list_all_translations(
     """
     translations = db.query(Translation).offset(skip).limit(limit).all()
     return [t.to_dict() for t in translations]
+
+@app.put("/translations/{translation_id}/edit")
+async def edit_translation(
+    translation_id: int,
+    edit_request: EditRequest,
+    db: Session = Depends(get_db)
+):
+    """Update a translation with manual edits"""
+    translation = db.query(Translation).filter(Translation.id == translation_id).first()
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    translation.edited_text = edit_request.edited_text
+    translation.feedback = edit_request.feedback
+    translation.is_edited = True
+
+    db.commit()
+    db.refresh(translation)
+
+    return {"message": "Translation updated", "translation": translation.to_dict()}
+
+@app.delete("/translations/{translation_id}")
+async def delete_translation(
+    translation_id: int,
+    db: Session = Depends(get_db)
+):
+    """Delete a translation"""
+    translation = db.query(Translation).filter(Translation.id == translation_id).first()
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    db.delete(translation)
+    db.commit()
+
+    return {"message": "Translation deleted"}
 
 if __name__ == "__main__":
     import uvicorn

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -12,6 +12,9 @@ class Translation(Base):
     language = Column(String(10), nullable=False)
     original_text = Column(Text, nullable=False)
     translated_text = Column(Text, nullable=False)
+    is_edited = Column(Boolean, default=False)
+    edited_text = Column(Text, nullable=True)
+    feedback = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
     
     def to_dict(self):
@@ -21,5 +24,8 @@ class Translation(Base):
             "language": self.language,
             "original_text": self.original_text,
             "translated_text": self.translated_text,
+            "is_edited": self.is_edited,
+            "edited_text": self.edited_text,
+            "feedback": self.feedback,
             "created_at": self.created_at.isoformat() if self.created_at else None
         }
