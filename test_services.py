@@ -105,47 +105,6 @@ def test_multiple_products():
     products_list = response.json()
     print(json.dumps(products_list, indent=2))
 
-def test_human_in_the_loop_features():
-    print_section("6. Human-in-the-Loop Features")
-
-    print("\n🔍 Getting pending translations:")
-    response = requests.get(f"{TRANSLATION_SERVICE}/translations/pending")
-    pending_translations = response.json()
-    print(json.dumps(pending_translations, indent=2))
-
-    if pending_translations:
-        first_pending = pending_translations[0]
-        translation_id = first_pending["id"]
-        original_translated_text = first_pending["translated_text"]
-        edited_text = f"{original_translated_text} (human-edited)"
-        feedback = "Improved clarity and tone."
-        reviewer_name = "Test Reviewer"
-
-        print(f"\n✍️ Submitting edit for translation ID {translation_id}:")
-        edit_data = {
-            "edited_text": edited_text,
-            "feedback": feedback,
-            "edited_by": reviewer_name
-        }
-        response = requests.put(
-            f"{TRANSLATION_SERVICE}/translations/{translation_id}/edit",
-            json=edit_data
-        )
-        print(json.dumps(response.json(), indent=2))
-
-        print(f"\n✅ Verifying edited translation ID {translation_id}:")
-        response = requests.get(f"{TRANSLATION_SERVICE}/translations/{first_pending["original_request_id"]}")
-        all_translations_for_product = response.json()
-        edited_translation = next((t for t in all_translations_for_product if t["id"] == translation_id), None)
-        print(json.dumps(edited_translation, indent=2))
-
-    else:
-        print("\nℹ️ No pending translations to edit.")
-
-    print("\n📊 Getting translation statistics:")
-    response = requests.get(f"{TRANSLATION_SERVICE}/translations/statistics")
-    print(json.dumps(response.json(), indent=2))
-
 def main():
     print("\n" + "🚀 " * 20)
     print("MICROSERVICES TRANSLATION SYSTEM - TEST SUITE")
@@ -158,7 +117,6 @@ def main():
         test_translations(product_id)
         test_direct_translation_access(product_id)
         test_multiple_products()
-        test_human_in_the_loop_features()
         
         print_section("✅ All Tests Completed Successfully!")
         

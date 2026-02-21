@@ -107,7 +107,9 @@ Make sure you have the following installed:
 
 ## Usage and Testing
 
-Once all services are up and running, you can interact with them using `curl` or the pr### Service Endpoints
+Once all services are up and running, you can interact with them using `curl` or the provided test scripts.
+
+### Service Endpoints
 
 -   **Product Service**: `http://localhost:3000`
     -   `GET /docs`: Swagger UI documentation.
@@ -116,20 +118,16 @@ Once all services are up and running, you can interact with them using `curl` or
     -   `POST /products`: Create a new product.
     -   `PUT /products/{product_id}`: Update a product.
     -   `DELETE /products/{product_id}`: Delete a product.
+    -   `GET /health`: Health check.
 
 -   **Translation Service**: `http://localhost:3001`
-    -   `GET /docs`: FastAPI auto-generated Swagger UI.
-    -   `GET /`: Service info and supported languages.
+    -   `POST /translate`: Request translation for text.
+    -   `GET /translations/{original_request_id}`: Get translations for a specific request ID.
+    -   `GET /translations`: List all stored translations.
     -   `GET /health`: Health check.
-    -   `POST /translate`: Translate text into multiple languages.
-    -   `GET /translations/{original_request_id}`: Get translations for a specific product ID.
-    -   `GET /translations`: List all translations.
-    -   `GET /translations/pending`: Get translations awaiting human review/editing.
-    -   `PUT /translations/{translation_id}/edit`: Submit human edits for a translation.
-    -   `GET /translations/statistics`: Get statistics on translation quality and edits.
+    -   `GET /docs`: Swagger UI documentation.
 
--   **Translation Review UI**: `http://localhost:8080`
-    -   A web interface for human reviewers to post-edit AI-generated translations and provide feedback.nning Tests
+### Running Tests
 
 Two test scripts are provided:
 
@@ -223,7 +221,3 @@ To add more languages to the Translation Microservice:
 
 **Author**: Manus AI
 **Date**: Oct 05, 2025
-#   m i c r o s e r v i c e s - t r a n s l a t i o n - p r o j e c t  
- #   T h e s i s  
- #   T h e s i s  
- 

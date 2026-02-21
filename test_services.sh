@@ -85,32 +85,6 @@ echo -e "${YELLOW}12. Listing all products in Spanish...${NC}"
 curl -s "$PRODUCT_SERVICE/products?lang=es" | jq '.'
 echo ""
 
-echo -e "${YELLOW}13. Getting pending translations from Translation Service...${NC}"
-PENDING_TRANSLATIONS=$(curl -s "$TRANSLATION_SERVICE/translations/pending" | jq ".")
-echo "$PENDING_TRANSLATIONS" | jq "."
-FIRST_PENDING_ID=$(echo "$PENDING_TRANSLATIONS" | jq -r ".[0].id")
-FIRST_PENDING_TEXT=$(echo "$PENDING_TRANSLATIONS" | jq -r ".[0].translated_text")
-
-if [ -n "$FIRST_PENDING_ID" ] && [ "$FIRST_PENDING_ID" != "null" ]; then
-  echo -e "${YELLOW}14. Submitting an edit for translation ID $FIRST_PENDING_ID...${NC}"
-  EDITED_TEXT="${FIRST_PENDING_TEXT} (human-edited)"
-  EDIT_RESPONSE=$(curl -s -X PUT "$TRANSLATION_SERVICE/translations/$FIRST_PENDING_ID/edit" \
-    -H "Content-Type: application/json" \
-    -d "{\"edited_text\": \"$EDITED_TEXT\", \"feedback\": \"Improved clarity\", \"edited_by\": \"Test Reviewer\"}")
-  echo "$EDIT_RESPONSE" | jq "."
-  echo ""
-
-  echo -e "${YELLOW}15. Verifying the edited translation...${NC}"
-  curl -s "$TRANSLATION_SERVICE/translations/$PRODUCT_ID" | jq "."
-  echo ""
-else
-  echo -e "${YELLOW}14. No pending translations to edit.${NC}"
-fi
-
-echo -e "${YELLOW}16. Getting translation statistics...${NC}"
-curl -s "$TRANSLATION_SERVICE/translations/statistics" | jq "."
-echo ""
-
 echo -e "${GREEN}=========================================="
 echo "All tests completed!"
 echo "==========================================${NC}"
