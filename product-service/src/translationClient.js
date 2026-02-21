@@ -55,7 +55,26 @@ async function getTranslation(productId, language) {
   }
 }
 
+/**
+ * Delete all translations for a product
+ */
+async function deleteTranslations(productId) {
+  try {
+    const response = await axios.delete(
+      `${TRANSLATION_SERVICE_URL}/translations/product/${productId}`,
+      {
+        timeout: 10000, // 10 seconds
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error(`❌ Failed to delete translations for product ${productId}:`, error.message);
+    throw error; // Re-throw to allow caller to handle failure
+  }
+}
+
 module.exports = {
   requestTranslation,
   getTranslation,
+  deleteTranslations,
 };

@@ -5,7 +5,7 @@ const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
 const { pool, initDatabase } = require('./database');
-const { requestTranslation, getTranslation } = require('./translationClient');
+const { requestTranslation, getTranslation, deleteTranslations } = require('./translationClient');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -527,6 +527,25 @@ app.delete('/products/:id', async (req, res) => {
 
   const client = await pool.connect();
   try {
+    // Check if product exists first
+    const checkResult = await client.query('SELECT id FROM products WHERE id = $1', [productId]);
+    if (checkResult.rows.length === 0) {
+      return res.status(404).json({ error: 'Product not found' });
+    }
+
+    // Attempt to delete translations first
+    try {
+      console.log(`🗑️  Deleting translations for product ${productId}...`);
+      await deleteTranslations(productId);
+      console.log(`✅ Translations deleted for product ${productId}`);
+    } catch (translationError) {
+      console.error(`❌ Aborting product deletion. Failed to delete translations:`, translationError.message);
+      return res.status(500).json({
+        error: 'Failed to delete associated translations. Product deletion aborted.'
+      });
+    }
+
+    // Delete product from database
     const result = await client.query('DELETE FROM products WHERE id = $1 RETURNING *', [productId]);
 
     if (result.rows.length === 0) {
