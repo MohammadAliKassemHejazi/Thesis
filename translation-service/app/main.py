@@ -143,6 +143,22 @@ async def translate_text(
         original_request_id=request.original_request_id
     )
 
+@app.get("/translations/statistics")
+async def get_translation_statistics(db: Session = Depends(get_db)):
+    """
+    Get statistics about translation quality and human edits
+    """
+    total = db.query(Translation).count()
+    edited = db.query(Translation).filter(Translation.is_edited == True).count()
+    pending = total - edited
+
+    return {
+        "total_translations": total,
+        "edited_translations": edited,
+        "pending_review": pending,
+        "edit_rate": round((edited / total * 100), 2) if total > 0 else 0
+    }
+
 @app.get("/translations/{original_request_id}")
 async def get_translations(
     original_request_id: int,
@@ -232,21 +248,23 @@ async def edit_translation(
         "translation": translation.to_dict()
     }
 
-@app.get("/translations/statistics")
-async def get_translation_statistics(db: Session = Depends(get_db)):
+@app.delete("/translations/{translation_id}")
+async def delete_translation(
+    translation_id: int,
+    db: Session = Depends(get_db)
+):
     """
-    Get statistics about translation quality and human edits
+    Delete a translation by ID
     """
-    total = db.query(Translation).count()
-    edited = db.query(Translation).filter(Translation.is_edited == True).count()
-    pending = total - edited
+    translation = db.query(Translation).filter(Translation.id == translation_id).first()
     
-    return {
-        "total_translations": total,
-        "edited_translations": edited,
-        "pending_review": pending,
-        "edit_rate": round((edited / total * 100), 2) if total > 0 else 0
-    }
+    if not translation:
+        raise HTTPException(status_code=404, detail="Translation not found")
+
+    db.delete(translation)
+    db.commit()
+
+    return {"message": "Translation deleted successfully"}
 
 @app.get("/dashboard", response_class=HTMLResponse)
 async def dashboard():
