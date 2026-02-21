@@ -3,8 +3,8 @@ const axios = require('axios');
 const TRANSLATION_SERVICE_URL = process.env.TRANSLATION_SERVICE_URL || 'http://translation-service:3001';
 
 /**
- * Request translation from Translation Microservice (Async)
- * Returns immediately with 202 Accepted.
+ * Request translation from Translation Microservice (Synchronous)
+ * Returns array of translations after processing is complete.
  */
 async function requestTranslation(productId, text, targetLanguages) {
   try {
@@ -16,11 +16,11 @@ async function requestTranslation(productId, text, targetLanguages) {
         target_languages: targetLanguages,
       },
       {
-        timeout: 5000, // Reduced to 5 seconds since it returns immediately
+        timeout: 60000, // Increased to 60 seconds for synchronous processing
       }
     );
-    console.log(`✅ Translation request sent for product ${productId}: ${response.status} ${response.statusText}`);
-    return response.data; // Returns { message: "Translation request accepted", ... }
+    console.log(`✅ Translation completed for product ${productId}: ${response.status} ${response.statusText}`);
+    return response.data; // Returns array of translations
   } catch (error) {
     console.error('❌ Translation request failed:', error.message);
     return null;
