@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks
+from fastapi import FastAPI, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import HTMLResponse
 from pydantic import BaseModel, Field, validator
@@ -53,47 +53,6 @@ class TranslationResponse(BaseModel):
     original_text: str
     translated_text: str
 
-class TranslationAcceptedResponse(BaseModel):
-    message: str
-    original_request_id: int
-    status: str = "accepted"
-
-def process_translation_task(request_id: int, text: str, target_languages: List[str]):
-    """
-    Background task to process translations
-    """
-    db = SessionLocal()
-    try:
-        logger.info(f"Starting background translation for request {request_id}")
-        for target_lang in target_languages:
-            try:
-                # Check if language is supported
-                if target_lang not in translation_engine.supported_languages:
-                    logger.warning(f"Unsupported language: {target_lang}")
-                    continue
-
-                # Translate text
-                translated_text = translation_engine.translate(text, target_lang)
-
-                # Store in database
-                translation = Translation(
-                    original_request_id=request_id,
-                    language=target_lang,
-                    original_text=text,
-                    translated_text=translated_text
-                )
-                db.add(translation)
-                db.commit()
-                logger.info(f"Saved translation for {target_lang}")
-
-            except Exception as e:
-                logger.error(f"Translation failed for {target_lang}: {str(e)}")
-                db.rollback()
-                continue
-    finally:
-        db.close()
-        logger.info(f"Finished background translation for request {request_id}")
-
 @app.on_event("startup")
 async def startup_event():
     """Load AI models on startup"""
@@ -122,26 +81,51 @@ async def health_check():
         "supported_languages": list(translation_engine.supported_languages.keys())
     }
 
-@app.post("/translate", response_model=TranslationAcceptedResponse, status_code=202)
-async def translate_text(
-    request: TranslateRequest,
-    background_tasks: BackgroundTasks
-):
+@app.post("/translate", response_model=List[TranslationResponse])
+async def translate_text(request: TranslateRequest, db: Session = Depends(get_db)):
     """
-    Queue text for translation into multiple languages
+    Translate text into multiple languages and store results
     """
-    # Queue the background task
-    background_tasks.add_task(
-        process_translation_task,
-        request.original_request_id,
-        request.text,
-        request.target_languages
-    )
+    translations = []
     
-    return TranslationAcceptedResponse(
-        message="Translation request accepted",
-        original_request_id=request.original_request_id
-    )
+    for target_lang in request.target_languages:
+        try:
+            # Check if language is supported
+            if target_lang not in translation_engine.supported_languages:
+                logger.warning(f"Unsupported language: {target_lang}")
+                continue
+
+            # Translate text
+            translated_text = translation_engine.translate(request.text, target_lang)
+
+            # Store in database
+            translation = Translation(
+                original_request_id=request.original_request_id,
+                language=target_lang,
+                original_text=request.text,
+                translated_text=translated_text
+            )
+            db.add(translation)
+            db.commit()
+            db.refresh(translation)
+
+            translations.append(TranslationResponse(
+                id=translation.id,
+                original_request_id=translation.original_request_id,
+                language=translation.language,
+                original_text=translation.original_text,
+                translated_text=translation.translated_text
+            ))
+
+        except Exception as e:
+            logger.error(f"Translation failed for {target_lang}: {str(e)}")
+            db.rollback()
+            continue
+
+    if not translations:
+        raise HTTPException(status_code=500, detail="All translations failed")
+
+    return translations
 
 @app.get("/translations/{original_request_id}")
 async def get_translations(
