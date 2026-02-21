@@ -8,7 +8,7 @@ import logging
 import os
 from pathlib import Path
 
-from app.database import get_db, engine, SessionLocal
+from app.database import get_db, engine, SessionLocal, check_and_migrate_db
 from app.models import Base, Translation
 from app.translator import translation_engine
 
@@ -52,12 +52,17 @@ class TranslationResponse(BaseModel):
     language: str
     original_text: str
     translated_text: str
+    confidence_score: Optional[float] = None
+    needs_review: Optional[bool] = False
 
 @app.on_event("startup")
 async def startup_event():
     """Load AI models on startup"""
     logger.info("Starting Translation Microservice...")
     try:
+        # Run migration check
+        check_and_migrate_db()
+
         # Preload models (optional - can be lazy loaded instead)
         translation_engine.preload_all_models()
         logger.info("Translation service ready")
@@ -95,15 +100,18 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
                 logger.warning(f"Unsupported language: {target_lang}")
                 continue
 
-            # Translate text
-            translated_text = translation_engine.translate(request.text, target_lang)
+            # Translate text with validation
+            result = translation_engine.translate_with_validation(request.text, target_lang)
 
             # Store in database
             translation = Translation(
                 original_request_id=request.original_request_id,
                 language=target_lang,
                 original_text=request.text,
-                translated_text=translated_text
+                translated_text=result["translated_text"],
+                confidence_score=result["confidence_score"],
+                back_translation=result["back_translation"],
+                needs_review=result["needs_review"]
             )
             db.add(translation)
             db.commit()
@@ -114,7 +122,9 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
                 original_request_id=translation.original_request_id,
                 language=translation.language,
                 original_text=translation.original_text,
-                translated_text=translation.translated_text
+                translated_text=translation.translated_text,
+                confidence_score=translation.confidence_score,
+                needs_review=translation.needs_review
             ))
 
         except Exception as e:
@@ -143,7 +153,22 @@ async def get_translation_statistics(db: Session = Depends(get_db)):
         "edit_rate": round((edited / total * 100), 2) if total > 0 else 0
     }
 
-@app.get("/translations/{original_request_id}")
+@app.get("/translations/pending")
+async def get_pending_translations(
+    skip: int = 0,
+    limit: int = 50,
+    db: Session = Depends(get_db)
+):
+    """
+    Get translations that haven't been reviewed/edited yet
+    """
+    translations = db.query(Translation).filter(
+        Translation.is_edited == False
+    ).offset(skip).limit(limit).all()
+
+    return [t.to_dict() for t in translations]
+
+@app.get("/translations/{original_request_id:int}")
 async def get_translations(
     original_request_id: int,
     lang: Optional[str] = None,
@@ -186,20 +211,6 @@ class EditTranslationRequest(BaseModel):
     feedback: Optional[str] = None
     edited_by: Optional[str] = "reviewer"
 
-@app.get("/translations/pending")
-async def get_pending_translations(
-    skip: int = 0,
-    limit: int = 50,
-    db: Session = Depends(get_db)
-):
-    """
-    Get translations that haven't been reviewed/edited yet
-    """
-    translations = db.query(Translation).filter(
-        Translation.is_edited == False
-    ).offset(skip).limit(limit).all()
-    
-    return [t.to_dict() for t in translations]
 
 @app.put("/translations/{translation_id}/edit")
 async def edit_translation(

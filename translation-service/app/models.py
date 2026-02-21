@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, Float
 from sqlalchemy.ext.declarative import declarative_base
 from datetime import datetime
 
@@ -14,6 +14,11 @@ class Translation(Base):
     translated_text = Column(Text, nullable=False)
     created_at = Column(DateTime, default=datetime.utcnow)
     
+    # Validation fields
+    confidence_score = Column(Float, nullable=True)
+    back_translation = Column(Text, nullable=True)
+    needs_review = Column(Boolean, default=False)
+
     # Human-in-the-loop fields for quality control
     is_edited = Column(Boolean, default=False)
     edited_text = Column(Text, nullable=True)
@@ -28,6 +33,9 @@ class Translation(Base):
             "language": self.language,
             "original_text": self.original_text,
             "translated_text": self.translated_text,
+            "confidence_score": self.confidence_score,
+            "back_translation": self.back_translation,
+            "needs_review": self.needs_review,
             "created_at": self.created_at.isoformat() if self.created_at else None,
             "is_edited": self.is_edited,
             "edited_text": self.edited_text,
