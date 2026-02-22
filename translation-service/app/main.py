@@ -54,11 +54,13 @@ async def startup_event():
     """Load AI models on startup and migrate DB"""
     logger.info("Starting Translation Microservice...")
     try:
+        # ✅ Uncomment this line:
+        Base.metadata.create_all(bind=engine)
         # Check and migrate database (pass Base to allow table creation)
-        check_and_migrate_db(engine, Base)
+        #check_and_migrate_db(engine, Base)
 
         # Preload models (optional - can be lazy loaded instead)
-        # translation_engine.preload_all_models()
+        translation_engine.preload_all_models()
         logger.info("Translation service ready")
     except Exception as e:
         logger.error(f"Startup failed: {str(e)}")
