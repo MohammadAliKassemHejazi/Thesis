@@ -8,3 +8,4 @@ sentencepiece==0.2.1
 sacremoses==0.1.1
 pydantic==2.12.5
 python-dotenv==1.2.1
+alembic

@@ -6,8 +6,8 @@ from typing import List, Optional
 import logging
 from pathlib import Path
 
-from app.database import get_db, engine, check_and_migrate_db
-from app.models import Base, Translation
+from app.database import get_db, engine, run_migrations
+from app.models import Translation
 from app.translator import translation_engine
 
 # Configure logging
@@ -54,10 +54,15 @@ async def startup_event():
     """Load AI models on startup and migrate DB"""
     logger.info("Starting Translation Microservice...")
     try:
+
+        # Run database migrations
+        run_migrations()
+
         # ✅ Uncomment this line:
-        Base.metadata.create_all(bind=engine)
+#         Base.metadata.create_all(bind=engine)
         # Check and migrate database (pass Base to allow table creation)
         #check_and_migrate_db(engine, Base)
+
 
         # Preload models (optional - can be lazy loaded instead)
         translation_engine.preload_all_models()
