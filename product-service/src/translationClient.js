@@ -5,13 +5,14 @@ const TRANSLATION_SERVICE_URL = process.env.TRANSLATION_SERVICE_URL || 'http://t
 /**
  * Request translation from Translation Microservice
  */
-async function requestTranslation(productId, text, targetLanguages) {
+async function requestTranslation(productId, name, description, targetLanguages) {
   try {
     const response = await axios.post(
       `${TRANSLATION_SERVICE_URL}/translate`,
       {
         original_request_id: productId,
-        text: text,
+        name: name,
+        description: description,
         target_languages: targetLanguages,
       },
       {

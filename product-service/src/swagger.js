@@ -52,7 +52,7 @@ const options = {
         },
         ProductCreate: {
           type: 'object',
-          required: ['name'],
+          required: ['name', 'description'],
           properties: {
             name: {
               type: 'string',

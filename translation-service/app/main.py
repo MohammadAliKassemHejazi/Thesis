@@ -14,8 +14,9 @@ from app.translator import translation_engine
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Create database tables
-Base.metadata.create_all(bind=engine)
+# Create database tables if they don't exist
+# We defer this slightly so check_and_migrate_db can handle schema changes
+# Base.metadata.create_all(bind=engine)
 
 app = FastAPI(
     title="Translation Microservice",
@@ -26,21 +27,26 @@ app = FastAPI(
 # Pydantic models for request/response
 class TranslateRequest(BaseModel):
     original_request_id: int
-    text: str
+    name: str
+    description: str
     target_languages: List[str]
 
 class TranslationResponse(BaseModel):
     id: int
     original_request_id: int
     language: str
-    original_text: str
-    translated_text: str
+    original_name: str
+    translated_name: str
+    original_description: str
+    translated_description: str
     is_edited: bool = False
-    edited_text: Optional[str] = None
+    edited_name: Optional[str] = None
+    edited_description: Optional[str] = None
     feedback: Optional[str] = None
 
 class EditRequest(BaseModel):
-    edited_text: str
+    edited_name: Optional[str] = None
+    edited_description: Optional[str] = None
     feedback: Optional[str] = None
 
 @app.on_event("startup")
@@ -48,8 +54,8 @@ async def startup_event():
     """Load AI models on startup and migrate DB"""
     logger.info("Starting Translation Microservice...")
     try:
-        # Check and migrate database
-        check_and_migrate_db(engine)
+        # Check and migrate database (pass Base to allow table creation)
+        check_and_migrate_db(engine, Base)
 
         # Preload models (optional - can be lazy loaded instead)
         # translation_engine.preload_all_models()
@@ -114,15 +120,22 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
                 logger.warning(f"Unsupported language: {target_lang}")
                 continue
             
-            # Translate text
-            translated_text = translation_engine.translate(request.text, target_lang)
+            # Translate name
+            translated_name = translation_engine.translate(request.name, target_lang)
+
+            # Translate description (handle empty description gracefully)
+            translated_desc = ""
+            if request.description and request.description.strip():
+                translated_desc = translation_engine.translate(request.description, target_lang)
             
             # Store in database
             translation = Translation(
                 original_request_id=request.original_request_id,
                 language=target_lang,
-                original_text=request.text,
-                translated_text=translated_text
+                original_name=request.name,
+                translated_name=translated_name,
+                original_description=request.description,
+                translated_description=translated_desc
             )
             db.add(translation)
             db.commit()
@@ -132,8 +145,10 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
                 id=translation.id,
                 original_request_id=translation.original_request_id,
                 language=translation.language,
-                original_text=translation.original_text,
-                translated_text=translation.translated_text
+                original_name=translation.original_name,
+                translated_name=translation.translated_name,
+                original_description=translation.original_description,
+                translated_description=translation.translated_description
             ))
             
         except Exception as e:
@@ -193,7 +208,12 @@ async def edit_translation(
     if not translation:
         raise HTTPException(status_code=404, detail="Translation not found")
 
-    translation.edited_text = edit_request.edited_text
+    if edit_request.edited_name is not None:
+        translation.edited_name = edit_request.edited_name
+
+    if edit_request.edited_description is not None:
+        translation.edited_description = edit_request.edited_description
+
     translation.feedback = edit_request.feedback
     translation.is_edited = True
 

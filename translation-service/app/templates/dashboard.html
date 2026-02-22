@@ -68,13 +68,15 @@
         };
 
         const EditModal = ({ isOpen, onClose, translation, onSave }) => {
-            const [text, setText] = useState('');
+            const [name, setName] = useState('');
+            const [description, setDescription] = useState('');
             const [feedback, setFeedback] = useState('');
             const [isSaving, setIsSaving] = useState(false);
 
             useEffect(() => {
                 if (translation) {
-                    setText(translation.edited_text || translation.translated_text);
+                    setName(translation.edited_name || translation.translated_name);
+                    setDescription(translation.edited_description || translation.translated_description || '');
                     setFeedback(translation.feedback || '');
                 }
             }, [translation]);
@@ -84,7 +86,7 @@
             const handleSave = async () => {
                 setIsSaving(true);
                 try {
-                    await onSave(translation.id, text, feedback);
+                    await onSave(translation.id, name, description, feedback);
                     onClose();
                 } catch (error) {
                     console.error("Failed to save:", error);
@@ -96,28 +98,56 @@
 
             return (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-                    <div className="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden">
+                    <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl overflow-hidden">
                         <div className="px-6 py-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
                             <h3 className="text-lg font-medium text-gray-900">Edit Translation</h3>
                             <button onClick={onClose} className="text-gray-400 hover:text-gray-500">
                                 <span className="text-2xl">&times;</span>
                             </button>
                         </div>
-                        <div className="p-6 space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Original Text ({translation.language})</label>
-                                <div className="p-3 bg-gray-50 rounded border border-gray-200 text-gray-800 text-sm">
-                                    {translation.original_text}
+                        <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+                            {/* Name Section */}
+                            <div className="border-b border-gray-200 pb-4">
+                                <h4 className="font-semibold text-gray-800 mb-2">Product Name</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Original ({translation.language})</label>
+                                        <div className="p-2 bg-gray-50 rounded border border-gray-200 text-gray-800 text-sm h-full">
+                                            {translation.original_name}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Translation</label>
+                                        <textarea
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-20 resize-none"
+                                            value={name}
+                                            onChange={(e) => setName(e.target.value)}
+                                        ></textarea>
+                                    </div>
                                 </div>
                             </div>
-                            <div>
-                                <label className="block text-sm font-medium text-gray-700 mb-1">Translated Text</label>
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-32 resize-none"
-                                    value={text}
-                                    onChange={(e) => setText(e.target.value)}
-                                ></textarea>
+
+                            {/* Description Section */}
+                            <div className="border-b border-gray-200 pb-4">
+                                <h4 className="font-semibold text-gray-800 mb-2">Description</h4>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Original ({translation.language})</label>
+                                        <div className="p-2 bg-gray-50 rounded border border-gray-200 text-gray-800 text-sm h-full overflow-y-auto max-h-32">
+                                            {translation.original_description}
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-500 mb-1">Translation</label>
+                                        <textarea
+                                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm h-32 resize-none"
+                                            value={description}
+                                            onChange={(e) => setDescription(e.target.value)}
+                                        ></textarea>
+                                    </div>
+                                </div>
                             </div>
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Feedback / Notes (Optional)</label>
                                 <textarea
@@ -188,12 +218,13 @@
                 fetchData();
             }, []);
 
-            const handleSaveEdit = async (id, editedText, feedback) => {
+            const handleSaveEdit = async (id, editedName, editedDescription, feedback) => {
                 const res = await fetch(`/translations/${id}/edit`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        edited_text: editedText,
+                        edited_name: editedName,
+                        edited_description: editedDescription,
                         feedback: feedback
                     })
                 });
@@ -235,8 +266,14 @@
                     const matchesStatus = statusFilter === 'all' ||
                         (statusFilter === 'edited' && t.is_edited) ||
                         (statusFilter === 'pending' && !t.is_edited);
-                    const matchesSearch = t.original_text.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                                          t.translated_text.toLowerCase().includes(searchTerm.toLowerCase());
+
+                    const term = searchTerm.toLowerCase();
+                    const matchesSearch =
+                        t.original_name.toLowerCase().includes(term) ||
+                        t.translated_name.toLowerCase().includes(term) ||
+                        t.original_description.toLowerCase().includes(term) ||
+                        t.translated_description.toLowerCase().includes(term);
+
                     return matchesLang && matchesStatus && matchesSearch;
                 });
             }, [translations, langFilter, statusFilter, searchTerm]);
@@ -356,15 +393,22 @@
                                                         {t.language}
                                                     </span>
                                                 </td>
-                                                <td className="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">{t.original_text}</td>
+                                                <td className="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">
+                                                    <div className="font-semibold">{t.original_name}</div>
+                                                    <div className="text-gray-500 mt-1 line-clamp-3">{t.original_description}</div>
+                                                </td>
                                                 <td className="px-6 py-4 text-sm text-gray-900 break-words max-w-xs">
                                                     {t.is_edited ? (
                                                         <div className="flex flex-col">
-                                                            <span className="text-green-700 font-medium">{t.edited_text}</span>
-                                                            <span className="text-xs text-gray-400 line-through mt-1">{t.translated_text}</span>
+                                                            <span className="text-green-700 font-medium">{t.edited_name || t.translated_name}</span>
+                                                            <span className="text-green-700 mt-1 line-clamp-3">{t.edited_description || t.translated_description}</span>
+                                                            <span className="text-xs text-gray-400 mt-2">Edited</span>
                                                         </div>
                                                     ) : (
-                                                        <span>{t.translated_text}</span>
+                                                        <div>
+                                                            <div className="font-medium">{t.translated_name}</div>
+                                                            <div className="text-gray-600 mt-1 line-clamp-3">{t.translated_description}</div>
+                                                        </div>
                                                     )}
                                                 </td>
                                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
