@@ -44,3 +44,5 @@ Thumbs.db
 # Database
 *.db
 *.sqlite
+node_modules/
+product-service/node_modules/

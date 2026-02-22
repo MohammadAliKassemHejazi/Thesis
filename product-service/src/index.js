@@ -4,7 +4,8 @@ const cors = require('cors');
 const bodyParser = require('body-parser');
 const swaggerUi = require('swagger-ui-express');
 const swaggerSpec = require('./swagger');
-const { pool, initDatabase } = require('./database');
+const sequelize = require('./config/sequelize');
+const Product = require('./models/Product');
 const { requestTranslation, getTranslation, deleteTranslations } = require('./translationClient');
 
 const app = express();
@@ -57,7 +58,7 @@ app.get('/', (req, res) => {
     service: 'Product Service',
     status: 'running',
     version: '1.0.0',
-    technology: 'Node.js + Express.js',
+    technology: 'Node.js + Express.js (Sequelize)',
   });
 });
 
@@ -134,15 +135,14 @@ app.post('/products', async (req, res) => {
     return res.status(400).json({ error: 'Product description is required' });
   }
 
-  const client = await pool.connect();
   try {
     // Insert product into database
-    const result = await client.query(
-      'INSERT INTO products (name, description, price) VALUES ($1, $2, $3) RETURNING *',
-      [name, description, price]
-    );
+    const product = await Product.create({
+      name,
+      description,
+      price
+    });
 
-    const product = result.rows[0];
     console.log(`✅ Created product: ${product.id} - ${product.name}`);
 
     // Request translations if enabled
@@ -164,8 +164,6 @@ app.post('/products', async (req, res) => {
   } catch (error) {
     console.error('❌ Error creating product:', error);
     res.status(500).json({ error: 'Failed to create product' });
-  } finally {
-    client.release();
   }
 });
 
@@ -223,16 +221,13 @@ app.get('/products/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid product ID' });
   }
 
-  const client = await pool.connect();
   try {
     // Get product from database
-    const result = await client.query('SELECT * FROM products WHERE id = $1', [productId]);
+    const product = await Product.findByPk(productId);
 
-    if (result.rows.length === 0) {
+    if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
-
-    const product = result.rows[0];
 
     // If English or no language specified, return original
     if (lang === 'en') {
@@ -278,8 +273,6 @@ app.get('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('❌ Error fetching product:', error);
     res.status(500).json({ error: 'Failed to fetch product' });
-  } finally {
-    client.release();
   }
 });
 
@@ -330,14 +323,13 @@ app.get('/products', async (req, res) => {
   const limit = parseInt(req.query.limit) || 100;
   const lang = req.query.lang || 'en';
 
-  const client = await pool.connect();
   try {
-    const result = await client.query(
-      'SELECT * FROM products ORDER BY id OFFSET $1 LIMIT $2',
-      [skip, limit]
-    );
+    const products = await Product.findAll({
+      offset: skip,
+      limit: limit,
+      order: [['id', 'ASC']]
+    });
 
-    const products = result.rows;
     const responseProducts = [];
 
     for (const product of products) {
@@ -385,8 +377,6 @@ app.get('/products', async (req, res) => {
   } catch (error) {
     console.error('❌ Error listing products:', error);
     res.status(500).json({ error: 'Failed to list products' });
-  } finally {
-    client.release();
   }
 });
 
@@ -458,19 +448,18 @@ app.put('/products/:id', async (req, res) => {
     return res.status(400).json({ error: 'Product description is required' });
   }
 
-  const client = await pool.connect();
   try {
     // Update product in database
-    const result = await client.query(
-      'UPDATE products SET name = $1, description = $2, price = $3, updated_at = CURRENT_TIMESTAMP WHERE id = $4 RETURNING *',
-      [name, description, price, productId]
+    const [affectedCount, affectedRows] = await Product.update(
+      { name, description, price, updated_at: new Date() },
+      { where: { id: productId }, returning: true }
     );
 
-    if (result.rows.length === 0) {
+    if (affectedCount === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
-    const product = result.rows[0];
+    const product = affectedRows[0];
     console.log(`✅ Updated product: ${product.id} - ${product.name}`);
 
     // Request new translations if enabled
@@ -491,8 +480,6 @@ app.put('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating product:', error);
     res.status(500).json({ error: 'Failed to update product' });
-  } finally {
-    client.release();
   }
 });
 
@@ -547,11 +534,10 @@ app.delete('/products/:id', async (req, res) => {
     return res.status(400).json({ error: 'Invalid product ID' });
   }
 
-  const client = await pool.connect();
   try {
     // Check if product exists first
-    const checkResult = await client.query('SELECT id FROM products WHERE id = $1', [productId]);
-    if (checkResult.rows.length === 0) {
+    const product = await Product.findByPk(productId);
+    if (!product) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
@@ -568,9 +554,9 @@ app.delete('/products/:id', async (req, res) => {
     }
 
     // Delete product from database
-    const result = await client.query('DELETE FROM products WHERE id = $1 RETURNING *', [productId]);
+    const deletedCount = await Product.destroy({ where: { id: productId } });
 
-    if (result.rows.length === 0) {
+    if (deletedCount === 0) {
       return res.status(404).json({ error: 'Product not found' });
     }
 
@@ -579,8 +565,6 @@ app.delete('/products/:id', async (req, res) => {
   } catch (error) {
     console.error('❌ Error deleting product:', error);
     res.status(500).json({ error: 'Failed to delete product' });
-  } finally {
-    client.release();
   }
 });
 
@@ -594,7 +578,12 @@ app.use((err, req, res, next) => {
 async function startServer() {
   try {
     // Initialize database
-    await initDatabase();
+    await sequelize.authenticate();
+    console.log('✅ Connected to PostgreSQL database via Sequelize');
+
+    // Sync models (create tables if not exist)
+    await sequelize.sync();
+    console.log('✅ Database schema synced');
     
     // Start listening
     app.listen(PORT, '0.0.0.0', () => {
