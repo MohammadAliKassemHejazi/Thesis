@@ -1,5 +1,10 @@
 from transformers import MarianMTModel, MarianTokenizer
 import logging
+import os
+
+# Set environment variables for Hugging Face cache
+os.environ["HF_HOME"] = "/app/model_cache"
+os.environ["TRANSFORMERS_CACHE"] = "/app/model_cache"
 
 logger = logging.getLogger(__name__)
 
@@ -11,8 +16,6 @@ class TranslationEngine:
             "es": "Helsinki-NLP/opus-mt-en-es",  # Spanish
             "fr": "Helsinki-NLP/opus-mt-en-fr",  # French
             "de": "Helsinki-NLP/opus-mt-en-de",  # German
-            "it": "Helsinki-NLP/opus-mt-en-it",  # Italian
-            "pt": "Helsinki-NLP/opus-mt-en-pt",  # Portuguese
         }
         
     def load_model(self, target_lang: str):

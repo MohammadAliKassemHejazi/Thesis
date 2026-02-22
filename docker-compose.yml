@@ -45,13 +45,15 @@ services:
     container_name: translation-service
     environment:
       DATABASE_URL: postgresql://translation_user:translation_pass@translation-db:5432/translations_db
+      HF_HOME: /app/model_cache
+      TRANSFORMERS_CACHE: /app/model_cache
     ports:
       - "3001:3001"
     depends_on:
       translation-db:
         condition: service_healthy
     volumes:
-      - translation_models:/root/.cache/huggingface
+      - model_cache:/app/model_cache
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
       interval: 30s
@@ -87,7 +89,7 @@ volumes:
     driver: local
   translation_db_data:
     driver: local
-  translation_models:
+  model_cache:
     driver: local
 
 networks:
