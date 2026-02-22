@@ -121,6 +121,15 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
                 logger.warning(f"Unsupported language: {target_lang}")
                 continue
             
+            # Check if translation already exists and delete it
+            existing_translation = db.query(Translation).filter(
+                Translation.original_request_id == request.original_request_id,
+                Translation.language == target_lang
+            ).first()
+
+            if existing_translation:
+                db.delete(existing_translation)
+
             # Translate name
             translated_name = translation_engine.translate(request.name, target_lang)
 
