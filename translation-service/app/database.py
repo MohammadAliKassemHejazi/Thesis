@@ -24,15 +24,4 @@ def get_db():
     finally:
         db.close()
 
-def run_migrations():
-    """Run Alembic migrations to upgrade the database schema."""
-    try:
-        logger.info("Running database migrations...")
-        # Assuming alembic.ini is in the current working directory or provided path
-        # If run from root of translation-service, "alembic.ini" is correct.
-        alembic_cfg = Config("alembic.ini")
-        command.upgrade(alembic_cfg, "head")
-        logger.info("Database migrations complete.")
-    except Exception as e:
-        logger.error(f"Error running migrations: {e}")
-        raise e
+
