@@ -37,6 +37,12 @@ def check_and_migrate_db(engine_instance):
     columns = [col['name'] for col in inspector.get_columns("translations")]
 
     with engine_instance.connect() as conn:
+        # Check and add 'field_name' column
+        if "field_name" not in columns:
+            logger.info("Adding missing column: field_name")
+            conn.execute(text("ALTER TABLE translations ADD COLUMN field_name VARCHAR(50)"))
+            conn.commit()
+
         # Check and add 'is_edited' column
         if "is_edited" not in columns:
             logger.info("Adding missing column: is_edited")

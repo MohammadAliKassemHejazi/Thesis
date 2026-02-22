@@ -44,3 +44,9 @@ Thumbs.db
 # Database
 *.db
 *.sqlite
+product-service/node_modules/
+node_modules/
+product-service/node_modules/
+node_modules/
+test_output.txt
+test.db

@@ -5,13 +5,14 @@ const TRANSLATION_SERVICE_URL = process.env.TRANSLATION_SERVICE_URL || 'http://t
 /**
  * Request translation from Translation Microservice
  */
-async function requestTranslation(productId, text, targetLanguages) {
+async function requestTranslation(productId, text, fieldName, targetLanguages) {
   try {
     const response = await axios.post(
       `${TRANSLATION_SERVICE_URL}/translate`,
       {
         original_request_id: productId,
         text: text,
+        field_name: fieldName,
         target_languages: targetLanguages,
       },
       {
@@ -38,13 +39,9 @@ async function getTranslation(productId, language) {
       }
     );
     
-    const translations = response.data;
-    
-    // Return the first matching translation
-    if (translations && translations.length > 0) {
-      return translations[0];
-    }
-    return null;
+    // Return all translations for this product in the requested language
+    // The caller will be responsible for mapping field_name
+    return response.data;
   } catch (error) {
     if (error.response && error.response.status === 404) {
       console.warn(`⚠️  Translation not found for product ${productId} in ${language}`);

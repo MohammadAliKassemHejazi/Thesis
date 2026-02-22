@@ -27,11 +27,13 @@ app = FastAPI(
 class TranslateRequest(BaseModel):
     original_request_id: int
     text: str
+    field_name: Optional[str] = None
     target_languages: List[str]
 
 class TranslationResponse(BaseModel):
     id: int
     original_request_id: int
+    field_name: Optional[str] = None
     language: str
     original_text: str
     translated_text: str
@@ -120,6 +122,7 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
             # Store in database
             translation = Translation(
                 original_request_id=request.original_request_id,
+                field_name=request.field_name,
                 language=target_lang,
                 original_text=request.text,
                 translated_text=translated_text
@@ -131,6 +134,7 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
             translations.append(TranslationResponse(
                 id=translation.id,
                 original_request_id=translation.original_request_id,
+                field_name=translation.field_name,
                 language=translation.language,
                 original_text=translation.original_text,
                 translated_text=translation.translated_text
@@ -150,11 +154,12 @@ async def translate_text(request: TranslateRequest, db: Session = Depends(get_db
 async def get_translations(
     original_request_id: int,
     lang: Optional[str] = None,
+    field_name: Optional[str] = None,
     db: Session = Depends(get_db)
 ):
     """
     Get translations for a specific product/request ID
-    Optionally filter by language
+    Optionally filter by language and field name
     """
     query = db.query(Translation).filter(
         Translation.original_request_id == original_request_id
@@ -162,6 +167,9 @@ async def get_translations(
     
     if lang:
         query = query.filter(Translation.language == lang)
+
+    if field_name:
+        query = query.filter(Translation.field_name == field_name)
     
     translations = query.all()
     

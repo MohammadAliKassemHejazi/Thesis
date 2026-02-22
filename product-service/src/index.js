@@ -143,11 +143,20 @@ app.post('/products', async (req, res) => {
 
     // Request translations if enabled
     if (auto_translate && target_languages.length > 0) {
-      const translationText = description ? `${name}. ${description}` : name;
       console.log(`🌐 Requesting translations for product ${product.id}`);
       
-      // Fire and forget - don't wait for translation to complete
-      requestTranslation(product.id, translationText, target_languages)
+      // Fire and forget - request separate translations for name and description
+      const requests = [];
+
+      // Request translation for name
+      requests.push(requestTranslation(product.id, name, 'name', target_languages));
+
+      // Request translation for description if it exists
+      if (description) {
+        requests.push(requestTranslation(product.id, description, 'description', target_languages));
+      }
+
+      Promise.all(requests)
         .catch(err => console.error('Translation request error:', err));
     }
 
@@ -242,18 +251,36 @@ app.get('/products/:id', async (req, res) => {
       });
     }
 
-    // Get translation
-    const translation = await getTranslation(product.id, lang);
+    // Get translations
+    const translations = await getTranslation(product.id, lang);
 
-    if (translation) {
-      const translatedText = (translation.is_edited && translation.edited_text)
-        ? translation.edited_text
-        : translation.translated_text;
+    if (translations && translations.length > 0) {
+      // Map translations to fields
+      let translatedName = product.name;
+      let translatedDescription = product.description;
+      let nameFound = false;
+      let descFound = false;
+
+      for (const t of translations) {
+        const text = (t.is_edited && t.edited_text) ? t.edited_text : t.translated_text;
+
+        if (t.field_name === 'name') {
+          translatedName = text;
+          nameFound = true;
+        } else if (t.field_name === 'description') {
+          translatedDescription = text;
+          descFound = true;
+        } else if (!t.field_name) {
+          // Legacy support: apply to both if field_name is missing
+          if (!nameFound) translatedName = text;
+          if (!descFound) translatedDescription = text;
+        }
+      }
 
       return res.json({
         id: product.id,
-        name: translatedText,
-        description: translatedText,
+        name: translatedName,
+        description: translatedDescription,
         price: product.price ? parseFloat(product.price) : null,
         lang: lang,
       });
@@ -344,16 +371,33 @@ app.get('/products', async (req, res) => {
         });
       } else {
         // Try to get translation
-        const translation = await getTranslation(product.id, lang);
-        if (translation) {
-          const translatedText = (translation.is_edited && translation.edited_text)
-            ? translation.edited_text
-            : translation.translated_text;
+        const translations = await getTranslation(product.id, lang);
+        if (translations && translations.length > 0) {
+          let translatedName = product.name;
+          let translatedDescription = product.description;
+          let nameFound = false;
+          let descFound = false;
+
+          for (const t of translations) {
+            const text = (t.is_edited && t.edited_text) ? t.edited_text : t.translated_text;
+
+            if (t.field_name === 'name') {
+              translatedName = text;
+              nameFound = true;
+            } else if (t.field_name === 'description') {
+              translatedDescription = text;
+              descFound = true;
+            } else if (!t.field_name) {
+              // Legacy support
+              if (!nameFound) translatedName = text;
+              if (!descFound) translatedDescription = text;
+            }
+          }
 
           responseProducts.push({
             id: product.id,
-            name: translatedText,
-            description: translatedText,
+            name: translatedName,
+            description: translatedDescription,
             price: product.price ? parseFloat(product.price) : null,
             lang: lang,
           });
@@ -460,10 +504,16 @@ app.put('/products/:id', async (req, res) => {
 
     // Request new translations if enabled
     if (auto_translate && target_languages.length > 0) {
-      const translationText = description ? `${name}. ${description}` : name;
       console.log(`🌐 Requesting translations for updated product ${product.id}`);
       
-      requestTranslation(product.id, translationText, target_languages)
+      const requests = [];
+      requests.push(requestTranslation(product.id, name, 'name', target_languages));
+
+      if (description) {
+        requests.push(requestTranslation(product.id, description, 'description', target_languages));
+      }
+
+      Promise.all(requests)
         .catch(err => console.error('Translation request error:', err));
     }
 

@@ -9,6 +9,7 @@ class Translation(Base):
     
     id = Column(Integer, primary_key=True, index=True)
     original_request_id = Column(Integer, index=True, nullable=False)
+    field_name = Column(String(50), nullable=True)  # e.g., 'name', 'description'
     language = Column(String(10), nullable=False)
     original_text = Column(Text, nullable=False)
     translated_text = Column(Text, nullable=False)
@@ -21,6 +22,7 @@ class Translation(Base):
         return {
             "id": self.id,
             "original_request_id": self.original_request_id,
+            "field_name": self.field_name,
             "language": self.language,
             "original_text": self.original_text,
             "translated_text": self.translated_text,
