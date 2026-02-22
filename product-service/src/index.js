@@ -120,7 +120,7 @@ app.get('/health', (req, res) => {
 app.post('/products', async (req, res) => {
   const {
     name,
-    description = null,
+    description,
     price = null,
     auto_translate = true,
     target_languages = ['es', 'fr', 'de'],
@@ -128,6 +128,10 @@ app.post('/products', async (req, res) => {
 
   if (!name) {
     return res.status(400).json({ error: 'Product name is required' });
+  }
+
+  if (!description) {
+    return res.status(400).json({ error: 'Product description is required' });
   }
 
   const client = await pool.connect();
@@ -143,11 +147,10 @@ app.post('/products', async (req, res) => {
 
     // Request translations if enabled
     if (auto_translate && target_languages.length > 0) {
-      const translationText = description ? `${name}. ${description}` : name;
       console.log(`🌐 Requesting translations for product ${product.id}`);
       
       // Fire and forget - don't wait for translation to complete
-      requestTranslation(product.id, translationText, target_languages)
+      requestTranslation(product.id, name, description, target_languages)
         .catch(err => console.error('Translation request error:', err));
     }
 
@@ -246,14 +249,18 @@ app.get('/products/:id', async (req, res) => {
     const translation = await getTranslation(product.id, lang);
 
     if (translation) {
-      const translatedText = (translation.is_edited && translation.edited_text)
-        ? translation.edited_text
-        : translation.translated_text;
+      const translatedName = (translation.is_edited && translation.edited_name)
+        ? translation.edited_name
+        : translation.translated_name;
+
+      const translatedDescription = (translation.is_edited && translation.edited_description)
+        ? translation.edited_description
+        : translation.translated_description;
 
       return res.json({
         id: product.id,
-        name: translatedText,
-        description: translatedText,
+        name: translatedName,
+        description: translatedDescription,
         price: product.price ? parseFloat(product.price) : null,
         lang: lang,
       });
@@ -346,14 +353,18 @@ app.get('/products', async (req, res) => {
         // Try to get translation
         const translation = await getTranslation(product.id, lang);
         if (translation) {
-          const translatedText = (translation.is_edited && translation.edited_text)
-            ? translation.edited_text
-            : translation.translated_text;
+          const translatedName = (translation.is_edited && translation.edited_name)
+            ? translation.edited_name
+            : translation.translated_name;
+
+          const translatedDescription = (translation.is_edited && translation.edited_description)
+            ? translation.edited_description
+            : translation.translated_description;
 
           responseProducts.push({
             id: product.id,
-            name: translatedText,
-            description: translatedText,
+            name: translatedName,
+            description: translatedDescription,
             price: product.price ? parseFloat(product.price) : null,
             lang: lang,
           });
@@ -429,7 +440,7 @@ app.put('/products/:id', async (req, res) => {
   const productId = parseInt(req.params.id);
   const {
     name,
-    description = null,
+    description,
     price = null,
     auto_translate = true,
     target_languages = ['es', 'fr', 'de'],
@@ -441,6 +452,10 @@ app.put('/products/:id', async (req, res) => {
 
   if (!name) {
     return res.status(400).json({ error: 'Product name is required' });
+  }
+
+  if (!description) {
+    return res.status(400).json({ error: 'Product description is required' });
   }
 
   const client = await pool.connect();
@@ -460,10 +475,9 @@ app.put('/products/:id', async (req, res) => {
 
     // Request new translations if enabled
     if (auto_translate && target_languages.length > 0) {
-      const translationText = description ? `${name}. ${description}` : name;
       console.log(`🌐 Requesting translations for updated product ${product.id}`);
       
-      requestTranslation(product.id, translationText, target_languages)
+      requestTranslation(product.id, name, description, target_languages)
         .catch(err => console.error('Translation request error:', err));
     }
 
