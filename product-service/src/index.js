@@ -246,10 +246,14 @@ app.get('/products/:id', async (req, res) => {
     const translation = await getTranslation(product.id, lang);
 
     if (translation) {
+      const translatedText = (translation.is_edited && translation.edited_text)
+        ? translation.edited_text
+        : translation.translated_text;
+
       return res.json({
         id: product.id,
-        name: translation.translated_text,
-        description: translation.translated_text,
+        name: translatedText,
+        description: translatedText,
         price: product.price ? parseFloat(product.price) : null,
         lang: lang,
       });
@@ -342,10 +346,14 @@ app.get('/products', async (req, res) => {
         // Try to get translation
         const translation = await getTranslation(product.id, lang);
         if (translation) {
+          const translatedText = (translation.is_edited && translation.edited_text)
+            ? translation.edited_text
+            : translation.translated_text;
+
           responseProducts.push({
             id: product.id,
-            name: translation.translated_text,
-            description: translation.translated_text,
+            name: translatedText,
+            description: translatedText,
             price: product.price ? parseFloat(product.price) : null,
             lang: lang,
           });
