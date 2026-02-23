@@ -13,8 +13,8 @@ const options = {
     },
     servers: [
       {
-        url: 'http://localhost:3000',
-        description: 'Development server',
+        url: '/',
+        description: 'Product Service',
       },
     ],
     components: {
@@ -97,7 +97,7 @@ const options = {
       },
     },
   },
-  apis: ['./src/index.js'], // Path to the API routes
+  apis: ['./src/index.js', './src/routes/*.js'], // Path to the API routes
 };
 
 const swaggerSpec = swaggerJsdoc(options);
