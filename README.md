@@ -148,3 +148,36 @@ python3 test_services.py
 
 ---
 **Author**: Manus AI
+
+## API Endpoints
+
+### Product Service (Port 3000)
+
+*   **`POST /products`**
+    *   **Description**: Creates a new product and optionally triggers asynchronous translations if `target_languages` are provided.
+    *   **Body**: `{"name": "...", "description": "...", "price": 0.0, "target_languages": ["es", "fr"]}`
+*   **`GET /products`**
+    *   **Description**: Retrieves a list of all products with pagination (`skip`, `limit`) and an optional `lang` query parameter to fetch localized details.
+*   **`GET /products/:id`**
+    *   **Description**: Retrieves a single product by its ID. An optional `lang` query parameter can be passed to get localized details.
+*   **`PUT /products/:id`**
+    *   **Description**: Updates an existing product and triggers a re-translation if `target_languages` are provided.
+*   **`DELETE /products/:id`**
+    *   **Description**: Deletes a product by ID. Triggers a synchronous deletion of associated translations in the Translation Service before removing the local record.
+
+### Translation Service (Port 3001)
+
+*   **`POST /translate`**
+    *   **Description**: Accepts a text payload, translates it into the specified target languages using local AI models, and stores the results in the database.
+*   **`GET /translations`**
+    *   **Description**: Lists all translations in the database with pagination parameters (`skip`, `limit`).
+*   **`GET /translations/{original_request_id}`**
+    *   **Description**: Fetches all translations associated with a specific product ID (referred to as `original_request_id`). Can be filtered by `lang`.
+*   **`GET /translations/statistics`**
+    *   **Description**: Returns translation statistics, such as total counts per language and pending status. Used by the dashboard.
+*   **`PUT /translations/{translation_id}/edit`**
+    *   **Description**: Updates an existing translation record, typically used for manual edits or corrections from the dashboard.
+*   **`DELETE /translations/{translation_id}`**
+    *   **Description**: Deletes a specific translation record by its ID.
+*   **`DELETE /translations/product/{original_request_id}`**
+    *   **Description**: Deletes all translation records associated with a specific product ID. This endpoint is called by the Product Service during product deletion.
