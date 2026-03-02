@@ -181,3 +181,5 @@ python3 test_services.py
     *   **Description**: Deletes a specific translation record by its ID.
 *   **`DELETE /translations/product/{original_request_id}`**
     *   **Description**: Deletes all translation records associated with a specific product ID. This endpoint is called by the Product Service during product deletion.
+*   **`GET /dashboard`**
+    *   **Description**: Serves an embedded HTML dashboard for monitoring translation statistics, viewing status, and manually editing translations without requiring a separate frontend service.
