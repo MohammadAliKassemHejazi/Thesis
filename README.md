@@ -185,6 +185,10 @@ The system follows a choreographed sequence for managing products and their tran
 
 ### Product Service (Port 3000)
 
+*   **`GET /`**
+    *   **Description**: Returns basic information about the Product Service.
+*   **`GET /health`**
+    *   **Description**: Health check endpoint to verify the service is running.
 *   **`POST /products`**
     *   **Description**: Creates a new product and optionally triggers asynchronous translations if `target_languages` are provided.
     *   **Body**: `{"name": "...", "description": "...", "price": 0.0, "target_languages": ["es", "fr"]}`
@@ -199,6 +203,10 @@ The system follows a choreographed sequence for managing products and their tran
 
 ### Translation Service (Port 3001)
 
+*   **`GET /`**
+    *   **Description**: Returns basic information about the Translation Service.
+*   **`GET /health`**
+    *   **Description**: Health check endpoint to verify the service is running and models are loaded.
 *   **`POST /translate`**
     *   **Description**: Accepts a text payload, translates it into the specified target languages using local AI models, and stores the results in the database.
 *   **`GET /translations`**
