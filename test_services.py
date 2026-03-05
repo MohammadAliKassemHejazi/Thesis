@@ -17,11 +17,19 @@ def print_section(title):
 def test_health_checks():
     print_section("1. Testing Health Checks")
     
-    print("\n📊 Product Service Health:")
+    print("\n📊 Product Service Root (GET /):")
+    response = requests.get(f"{PRODUCT_SERVICE}/")
+    print(json.dumps(response.json(), indent=2))
+
+    print("\n📊 Product Service Health (GET /health):")
     response = requests.get(f"{PRODUCT_SERVICE}/health")
     print(json.dumps(response.json(), indent=2))
     
-    print("\n📊 Translation Service Health:")
+    print("\n📊 Translation Service Root (GET /):")
+    response = requests.get(f"{TRANSLATION_SERVICE}/")
+    print(json.dumps(response.json(), indent=2))
+
+    print("\n📊 Translation Service Health (GET /health):")
     response = requests.get(f"{TRANSLATION_SERVICE}/health")
     print(json.dumps(response.json(), indent=2))
 
@@ -105,8 +113,70 @@ def test_multiple_products():
     products_list = response.json()
     print(json.dumps(products_list, indent=2))
 
+def test_update_product(product_id):
+    print_section("6. Testing Product Update")
+
+    update_data = {
+        "name": "Wireless Headphones Pro",
+        "description": "Premium high-quality noise-cancelling headphones",
+        "price": 249.99,
+        "target_languages": ["es"] # Only translate to Spanish on update
+    }
+
+    print(f"\n📝 Updating product: {product_id}")
+    response = requests.put(
+        f"{PRODUCT_SERVICE}/products/{product_id}",
+        json=update_data
+    )
+    product = response.json()
+    print(json.dumps(product, indent=2))
+
+    print("\n⏳ Waiting 5 seconds for re-translation...")
+    time.sleep(5)
+
+    print(f"\n🌍 Fetching updated product in Spanish (es):")
+    response = requests.get(f"{PRODUCT_SERVICE}/products/{product_id}?lang=es")
+    print(json.dumps(response.json(), indent=2))
+
+def test_translation_endpoints():
+    print_section("7. Testing Additional Translation Endpoints")
+
+    print("\n📊 Fetching all translations:")
+    response = requests.get(f"{TRANSLATION_SERVICE}/translations")
+    translations = response.json()
+    print(f"Total translations found: {len(translations)}")
+    if len(translations) > 0:
+        print(json.dumps(translations[0], indent=2))
+
+        # Test editing a translation
+        translation_id = translations[0]['id']
+        print(f"\n✏️ Editing translation {translation_id}:")
+        edit_data = {
+            "translated_name": "Edited Name",
+            "translated_description": "Edited Description"
+        }
+        response = requests.put(
+            f"{TRANSLATION_SERVICE}/translations/{translation_id}/edit",
+            json=edit_data
+        )
+        print(json.dumps(response.json(), indent=2))
+
+        # Test deleting a single translation
+        print(f"\n🗑️ Deleting translation {translation_id}:")
+        response = requests.delete(f"{TRANSLATION_SERVICE}/translations/{translation_id}")
+        print(json.dumps(response.json(), indent=2))
+
+    print("\n📈 Fetching translation statistics:")
+    response = requests.get(f"{TRANSLATION_SERVICE}/translations/statistics")
+    print(json.dumps(response.json(), indent=2))
+
+    print("\n🖥️ Fetching Dashboard HTML:")
+    response = requests.get(f"{TRANSLATION_SERVICE}/dashboard")
+    print(f"Status Code: {response.status_code}")
+    print(f"Response length: {len(response.text)} bytes")
+
 def test_delete_sync(product_id):
-    print_section("6. Testing Synchronized Deletion")
+    print_section("8. Testing Synchronized Deletion")
 
     # Verify translations exist before deletion
     print(f"\n🔍 Verifying translations exist for product {product_id}...")
@@ -160,6 +230,8 @@ def main():
         test_translations(product_id)
         test_direct_translation_access(product_id)
         test_multiple_products()
+        test_update_product(product_id)
+        test_translation_endpoints()
         test_delete_sync(product_id)
         
         print_section("✅ All Tests Completed Successfully!")

@@ -148,3 +148,78 @@ python3 test_services.py
 
 ---
 **Author**: Manus AI
+
+## How the System Works & Editing Translations
+
+The system follows a choreographed sequence for managing products and their translated text:
+
+1.  **Product Creation (Fire-and-Forget Translation)**:
+    *   When a user creates a new product in the Product Service (`POST /products`), they can specify a list of `target_languages` (e.g., `["es", "fr"]`).
+    *   The Product Service saves the English product details to its own database.
+    *   It then asynchronously issues a single `POST /translate` request to the Translation Service, passing both the `name` and `description` to be translated, and immediately returns a success response to the client.
+
+2.  **Asynchronous Translation & Validation**:
+    *   The Translation Service receives the request and processes it using local Hugging Face `MarianMT` AI models.
+    *   For quality assurance, it performs a **back-translation** validation step: it translates the generated text back to English and calculates a confidence score using a sequence matcher.
+    *   The translated `name` and `description` are saved in a single translation record per target language in the `translations_db`.
+
+3.  **Retrieving Localized Products**:
+    *   Clients fetch products via the Product Service (`GET /products` or `GET /products/:id`) and can pass a `?lang=es` query parameter.
+    *   The Product Service dynamically queries the Translation Service for the localized data and merges it into the response. If the translation isn't ready or doesn't exist, it defaults back to English.
+
+4.  **Editing and Correcting Translations**:
+    *   Because AI translations aren't perfect, the system includes a **Dashboard** (`GET /dashboard` on Port 3001).
+    *   Users can navigate to the dashboard to view translation statistics (completed, pending, average confidence).
+    *   If a translation is inaccurate, a user can manually edit it via the dashboard, which triggers the `PUT /translations/{translation_id}/edit` endpoint.
+    *   *Note: Active AI fine-tuning based on human edits is not implemented; the system prioritizes a robust manual override mechanism.*
+
+5.  **Product Updates**:
+    *   If a product is updated in the Product Service (`PUT /products/:id`) with new `target_languages`, the Translation Service strictly replaces existing records. It deletes the old translations for the specified languages within a single database transaction and creates new ones, ensuring data integrity. Unspecified languages are preserved.
+
+6.  **Synchronized Deletion**:
+    *   Deleting a product enforces a strict distributed transaction pattern.
+    *   When `DELETE /products/:id` is called, the Product Service **must** successfully invoke `DELETE /translations/product/{original_request_id}` on the Translation Service first.
+    *   Only if the Translation Service confirms the hard deletion of all associated translations will the Product Service finalize the removal of the product from its own database.
+
+## API Endpoints
+
+### Product Service (Port 3000)
+
+*   **`GET /`**
+    *   **Description**: Returns basic information about the Product Service.
+*   **`GET /health`**
+    *   **Description**: Health check endpoint to verify the service is running.
+*   **`POST /products`**
+    *   **Description**: Creates a new product and optionally triggers asynchronous translations if `target_languages` are provided.
+    *   **Body**: `{"name": "...", "description": "...", "price": 0.0, "target_languages": ["es", "fr"]}`
+*   **`GET /products`**
+    *   **Description**: Retrieves a list of all products with pagination (`skip`, `limit`) and an optional `lang` query parameter to fetch localized details.
+*   **`GET /products/:id`**
+    *   **Description**: Retrieves a single product by its ID. An optional `lang` query parameter can be passed to get localized details.
+*   **`PUT /products/:id`**
+    *   **Description**: Updates an existing product and triggers a re-translation if `target_languages` are provided.
+*   **`DELETE /products/:id`**
+    *   **Description**: Deletes a product by ID. Triggers a synchronous deletion of associated translations in the Translation Service before removing the local record.
+
+### Translation Service (Port 3001)
+
+*   **`GET /`**
+    *   **Description**: Returns basic information about the Translation Service.
+*   **`GET /health`**
+    *   **Description**: Health check endpoint to verify the service is running and models are loaded.
+*   **`POST /translate`**
+    *   **Description**: Accepts a text payload, translates it into the specified target languages using local AI models, and stores the results in the database.
+*   **`GET /translations`**
+    *   **Description**: Lists all translations in the database with pagination parameters (`skip`, `limit`).
+*   **`GET /translations/{original_request_id}`**
+    *   **Description**: Fetches all translations associated with a specific product ID (referred to as `original_request_id`). Can be filtered by `lang`.
+*   **`GET /translations/statistics`**
+    *   **Description**: Returns translation statistics, such as total counts per language and pending status. Used by the dashboard.
+*   **`PUT /translations/{translation_id}/edit`**
+    *   **Description**: Updates an existing translation record, typically used for manual edits or corrections from the dashboard.
+*   **`DELETE /translations/{translation_id}`**
+    *   **Description**: Deletes a specific translation record by its ID.
+*   **`DELETE /translations/product/{original_request_id}`**
+    *   **Description**: Deletes all translation records associated with a specific product ID. This endpoint is called by the Product Service during product deletion.
+*   **`GET /dashboard`**
+    *   **Description**: Serves an embedded HTML dashboard for monitoring translation statistics, viewing status, and manually editing translations without requiring a separate frontend service.
