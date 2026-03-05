@@ -1,0 +1,1004 @@
+{
+  "system": {
+    "python": "3.13.12 (tags/v3.13.12:1cbe481, Feb  3 2026, 18:22:25) [MSC v.1944 64 bit (AMD64)]",
+    "os": "10.0.26200",
+    "machine": "AMD64",
+    "cpu": "'wmic' is not recognized as an internal or external command,\noperable program or batch file.",
+    "ram": "Total Physical Memory:         16,085 MB",
+    "docker": "Docker version 29.2.0, build 0b9d198",
+    "compose": "Docker Compose version v5.0.2",
+    "docker_resources": "CPUs: 20\n Total Memory: 7.609GiB"
+  },
+  "docker_status": "NAME                  IMAGE                                                   COMMAND                  SERVICE               CREATED             STATUS                         PORTS\nproduct-db            postgres:15-alpine                                      \"docker-entrypoint.sâ€¦\"   product-db            About an hour ago   Up About an hour (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp\nproduct-service       microservices-translation-project-product-service       \"docker-entrypoint.sâ€¦\"   product-service       About an hour ago   Up About an hour (unhealthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp\ntranslation-db        postgres:15-alpine                                      \"docker-entrypoint.sâ€¦\"   translation-db        About an hour ago   Up About an hour (healthy)     0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp\ntranslation-service   microservices-translation-project-translation-service   \"uvicorn app.main:apâ€¦\"   translation-service   About an hour ago   Up About an hour (unhealthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp\ntime=\"2026-03-05T23:44:32+01:00\" level=warning msg=\"C:\\\\Users\\\\USER\\\\OneDrive\\\\Desktop\\\\Thesis\\\\final\\\\microservices-translation-project\\\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion\"",
+  "timing": {
+    "GET /products": {
+      "label": "GET /products",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 7.2,
+      "min_ms": 5.0,
+      "max_ms": 16.5,
+      "p95_ms": 16.5
+    },
+    "GET /products/:id": {
+      "label": "GET /products/:id",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 4.9,
+      "min_ms": 4.5,
+      "max_ms": 6.9,
+      "p95_ms": 6.9
+    },
+    "GET /products/:id?lang=es": {
+      "label": "GET /products/:id?lang=es",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 9.0,
+      "min_ms": 7.9,
+      "max_ms": 19.8,
+      "p95_ms": 19.8
+    },
+    "POST /products (no translation)": {
+      "label": "POST /products (no translation)",
+      "method": "POST",
+      "status": 201,
+      "median_ms": 6.6,
+      "min_ms": 5.9,
+      "max_ms": 24.6,
+      "p95_ms": 24.6
+    },
+    "POST /products (translation trigger)": {
+      "label": "POST /products (translation fired)",
+      "method": "POST",
+      "status": 201,
+      "median_ms": 7.6,
+      "min_ms": 7.1,
+      "max_ms": 8.5,
+      "p95_ms": 8.5
+    },
+    "PUT /products/:id": {
+      "label": "PUT /products/:id (no translation)",
+      "method": "PUT",
+      "status": 200,
+      "median_ms": 8.3,
+      "min_ms": 8.0,
+      "max_ms": 21.2,
+      "p95_ms": 21.2
+    },
+    "DELETE /products/:id": {
+      "label": "DELETE /products/:id (sync translation cleanup)",
+      "method": "DELETE",
+      "status": 404,
+      "median_ms": 5.2,
+      "min_ms": 4.8,
+      "max_ms": 15.7,
+      "p95_ms": 15.7
+    },
+    "GET /health (product)": {
+      "label": "GET /health",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 3.6,
+      "min_ms": 3.2,
+      "max_ms": 12.7,
+      "p95_ms": 12.7
+    },
+    "GET /translations": {
+      "label": "GET /translations",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 8.0,
+      "min_ms": 7.8,
+      "max_ms": 9.6,
+      "p95_ms": 9.6
+    },
+    "GET /translations/statistics": {
+      "label": "GET /translations/statistics",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 6.5,
+      "min_ms": 5.6,
+      "max_ms": 15.9,
+      "p95_ms": 15.9
+    },
+    "GET /dashboard": {
+      "label": "GET /dashboard",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 5.1,
+      "min_ms": 4.5,
+      "max_ms": 22.4,
+      "p95_ms": 22.4
+    },
+    "GET /health (translation)": {
+      "label": "GET /health",
+      "method": "GET",
+      "status": 200,
+      "median_ms": 5.0,
+      "min_ms": 3.9,
+      "max_ms": 6.1,
+      "p95_ms": 6.1
+    }
+  },
+  "pipeline_timing": [
+    {
+      "product_name": "Smart LED Desk Lamp",
+      "product_id": 57,
+      "post_response_ms": 8.4,
+      "all_translations_present_sec": 1.2,
+      "translation_count": 3,
+      "created_ats": [
+        {
+          "lang": "es",
+          "created_at": "2026-03-05T22:44:39.165628"
+        },
+        {
+          "lang": "fr",
+          "created_at": "2026-03-05T22:44:39.559218"
+        },
+        {
+          "lang": "de",
+          "created_at": "2026-03-05T22:44:39.919235"
+        }
+      ]
+    },
+    {
+      "product_name": "Stainless Steel Water Bottle 750ml",
+      "product_id": 58,
+      "post_response_ms": 7.8,
+      "all_translations_present_sec": 1.3,
+      "translation_count": 3,
+      "created_ats": [
+        {
+          "lang": "es",
+          "created_at": "2026-03-05T22:44:40.422743"
+        },
+        {
+          "lang": "fr",
+          "created_at": "2026-03-05T22:44:40.874485"
+        },
+        {
+          "lang": "de",
+          "created_at": "2026-03-05T22:44:41.278034"
+        }
+      ]
+    },
+    {
+      "product_name": "Wireless Bluetooth Speaker Portable",
+      "product_id": 59,
+      "post_response_ms": 7.8,
+      "all_translations_present_sec": 1.2,
+      "translation_count": 3,
+      "created_ats": [
+        {
+          "lang": "es",
+          "created_at": "2026-03-05T22:44:41.684991"
+        },
+        {
+          "lang": "fr",
+          "created_at": "2026-03-05T22:44:42.048195"
+        },
+        {
+          "lang": "de",
+          "created_at": "2026-03-05T22:44:42.458749"
+        }
+      ]
+    }
+  ],
+  "docker_stats_active": "NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O\nproduct-service       0.18%     53.77MiB / 7.609GiB   0.69%     318kB / 244kB\ntranslation-service   0.48%     1.421GiB / 7.609GiB   18.67%    4.37MB / 6.04MB\nproduct-db            0.04%     37.04MiB / 7.609GiB   0.48%     61kB / 129kB\ntranslation-db        0.00%     42.32MiB / 7.609GiB   0.54%     2.22MB / 3.21MB",
+  "docker_stats_idle": "NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O\nproduct-service       0.45%     53.93MiB / 7.609GiB   0.69%     319kB / 245kB\ntranslation-service   0.62%     1.419GiB / 7.609GiB   18.66%    4.37MB / 6.04MB\nproduct-db            0.07%     37.27MiB / 7.609GiB   0.48%     61kB / 129kB\ntranslation-db        0.05%     42.37MiB / 7.609GiB   0.54%     2.22MB / 3.21MB",
+  "quality_test_set": [
+    {
+      "product_id": 61,
+      "category": "electronics",
+      "source_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+      "source_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+      "translations": {
+        "es": {
+          "translated_name": "ASUS ROG Strix Monitor de juegos de 27 pulgadas",
+          "translated_description": "Pantalla IPS QHD 170Hz con tiempo de respuesta de 1ms, HDR400 y compatible con G-Sync.",
+          "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+          "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:53.654133",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "ASUS ROG Strix Moniteur de jeu de 27 pouces",
+          "translated_description": "Affichage IPS QHD 170Hz avec temps de réponse de 1ms, HDR400 et G-Sync compatible.",
+          "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+          "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:54.204676",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "ASUS ROG Strix 27-Zoll Gaming Monitor",
+          "translated_description": "QHD 170Hz IPS-Display mit 1ms Ansprechzeit, HDR400 und G-Sync kompatibel.",
+          "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+          "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:54.689524",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 62,
+      "category": "electronics",
+      "source_name": "Logitech MX Master 3S Wireless Mouse",
+      "source_description": "Advanced ergonomic mouse with 8000 DPI sensor, quiet clicks, and USB-C charging.",
+      "translations": {
+        "es": {
+          "translated_name": "Ratón inalámbrico Logitech MX Master 3S",
+          "translated_description": "Ratón ergonómico avanzado con sensor de 8000 DPI, clics silenciosos y carga USB-C.",
+          "original_name": "Logitech MX Master 3S Wireless Mouse",
+          "original_description": "Advanced ergonomic mouse with 8000 DPI sensor, quiet clicks, and USB-C charging.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:55.196646",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Logitech MX Master 3S Souris sans fil",
+          "translated_description": "Souris ergonomique avancée avec capteur DPI 8000, clics silencieux et recharge USB-C.",
+          "original_name": "Logitech MX Master 3S Wireless Mouse",
+          "original_description": "Advanced ergonomic mouse with 8000 DPI sensor, quiet clicks, and USB-C charging.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:55.633025",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Logitech MX Master 3S Wireless Maus",
+          "translated_description": "Erweiterte ergonomische Maus mit 8000 DPI-Sensor, leise Klicks und USB-C-Lade.",
+          "original_name": "Logitech MX Master 3S Wireless Mouse",
+          "original_description": "Advanced ergonomic mouse with 8000 DPI sensor, quiet clicks, and USB-C charging.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:56.119037",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 63,
+      "category": "electronics",
+      "source_name": "Sony WH-1000XM5 Noise Cancelling Headphones",
+      "source_description": "Industry-leading noise cancellation, 30-hour battery, multipoint Bluetooth connection.",
+      "translations": {
+        "fr": {
+          "translated_name": "Sony WH-1000XM5 Casques d'annulation de bruit",
+          "translated_description": "Annulation de bruit leader de l'industrie, batterie de 30 heures, connexion Bluetooth multipoint.",
+          "original_name": "Sony WH-1000XM5 Noise Cancelling Headphones",
+          "original_description": "Industry-leading noise cancellation, 30-hour battery, multipoint Bluetooth connection.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:57.049252",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Sony WH-1000XM5 Geräuschabschaltung Kopfhörer",
+          "translated_description": "Branchenführende Geräuschunterdrückung, 30-Stunden-Batterie, Multipoint-Bluetooth-Verbindung.",
+          "original_name": "Sony WH-1000XM5 Noise Cancelling Headphones",
+          "original_description": "Industry-leading noise cancellation, 30-hour battery, multipoint Bluetooth connection.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:57.506560",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Sony WH-1000XM5 Auriculares con cancelación de ruido",
+          "translated_description": "Cancelación de ruido líder en la industria, batería de 30 horas, conexión Bluetooth multipunto.",
+          "original_name": "Sony WH-1000XM5 Noise Cancelling Headphones",
+          "original_description": "Industry-leading noise cancellation, 30-hour battery, multipoint Bluetooth connection.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:56.582271",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 64,
+      "category": "electronics",
+      "source_name": "Samsung 1TB NVMe SSD 980 Pro",
+      "source_description": "PCIe 4.0 NVMe M.2 solid state drive with sequential read speed up to 7000 MB/s.",
+      "translations": {
+        "fr": {
+          "translated_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "translated_description": "PCIe 4.0 NVMe M.2 disque à l'état solide avec une vitesse de lecture séquentielle jusqu'à 7000 Mo/s.",
+          "original_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "original_description": "PCIe 4.0 NVMe M.2 solid state drive with sequential read speed up to 7000 MB/s.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:58.695033",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "translated_description": "PCIe 4.0 NVMe M.2 Solid State Drive mit sequentieller Lesegeschwindigkeit bis zu 7000 MB/s.",
+          "original_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "original_description": "PCIe 4.0 NVMe M.2 solid state drive with sequential read speed up to 7000 MB/s.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:59.316611",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "translated_description": "PCIe 4.0 NVMe M.2 unidad de estado sólido con velocidad de lectura secuencial de hasta 7000 MB/s.",
+          "original_name": "Samsung 1TB NVMe SSD 980 Pro",
+          "original_description": "PCIe 4.0 NVMe M.2 solid state drive with sequential read speed up to 7000 MB/s.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:58.056552",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 65,
+      "category": "clothing",
+      "source_name": "Men's Merino Wool Crew Neck Sweater",
+      "source_description": "100% extra-fine merino wool, machine washable, available in navy, grey, and burgundy.",
+      "translations": {
+        "es": {
+          "translated_name": "Suéter de cuello de lana Merino para hombres",
+          "translated_description": "100% lana de merino extra fina, lavable a máquina, disponible en color marino, gris y burdeos.",
+          "original_name": "Men's Merino Wool Crew Neck Sweater",
+          "original_description": "100% extra-fine merino wool, machine washable, available in navy, grey, and burgundy.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:44:59.888504",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Merino-Wool-Crew-Neck-Sweater für Männer",
+          "translated_description": "100% extrafeine Merinowolle, maschinenwaschbar, in Marine, Grau und Burgund erhältlich.",
+          "original_name": "Men's Merino Wool Crew Neck Sweater",
+          "original_description": "100% extra-fine merino wool, machine washable, available in navy, grey, and burgundy.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:00.992187",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Chandail d'équipage en laine Merino pour hommes",
+          "translated_description": "100% laine mérinos extra-fine, lavable en machine, disponible en marine, gris et bordeaux.",
+          "original_name": "Men's Merino Wool Crew Neck Sweater",
+          "original_description": "100% extra-fine merino wool, machine washable, available in navy, grey, and burgundy.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:00.416913",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 66,
+      "category": "clothing",
+      "source_name": "Women's Waterproof Hiking Jacket",
+      "source_description": "Breathable 3-layer shell with sealed seams, adjustable hood, and pit-zip ventilation.",
+      "translations": {
+        "es": {
+          "translated_name": "Chaqueta de senderismo impermeable de las mujeres",
+          "translated_description": "Concha transpirable de 3 capas con costuras selladas, capucha ajustable y ventilación pit-zip.",
+          "original_name": "Women's Waterproof Hiking Jacket",
+          "original_description": "Breathable 3-layer shell with sealed seams, adjustable hood, and pit-zip ventilation.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:01.512872",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Veste de randonnée imperméable pour femmes",
+          "translated_description": "Coquille respirante à 3 couches avec coutures scellées, hotte réglable et ventilation pit-zip.",
+          "original_name": "Women's Waterproof Hiking Jacket",
+          "original_description": "Breathable 3-layer shell with sealed seams, adjustable hood, and pit-zip ventilation.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:01.995445",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Frauen wasserdichte Wanderjacke",
+          "translated_description": "Atmungsaktive 3-lagige Schale mit versiegelten Nähten, verstellbarer Kapuze und pit-zip-Lüftung.",
+          "original_name": "Women's Waterproof Hiking Jacket",
+          "original_description": "Breathable 3-layer shell with sealed seams, adjustable hood, and pit-zip ventilation.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:02.460688",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 67,
+      "category": "clothing",
+      "source_name": "Unisex Cotton Canvas Tote Bag",
+      "source_description": "Heavy-duty 12oz natural cotton canvas with reinforced handles, holds up to 22 lbs.",
+      "translations": {
+        "es": {
+          "translated_name": "Bolsa de algodón de algodón Unisex",
+          "translated_description": "Lona de algodón natural de 12 oz resistente con mangos reforzados, de hasta 22 libras.",
+          "original_name": "Unisex Cotton Canvas Tote Bag",
+          "original_description": "Heavy-duty 12oz natural cotton canvas with reinforced handles, holds up to 22 lbs.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:08.893386",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Sac en coton unisexe en toile de coton",
+          "translated_description": "Toile en coton naturel de 12 oz robuste avec poignées renforcées, peut contenir jusqu'à 22 lbs.",
+          "original_name": "Unisex Cotton Canvas Tote Bag",
+          "original_description": "Heavy-duty 12oz natural cotton canvas with reinforced handles, holds up to 22 lbs.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:09.320203",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Unisex Baumwolle Canvas Tote Tasche",
+          "translated_description": "Heavy-Duty 12 Unzen natürliche Baumwollleinwand mit verstärkten Griffen, hält bis zu 22 lbs.",
+          "original_name": "Unisex Cotton Canvas Tote Bag",
+          "original_description": "Heavy-duty 12oz natural cotton canvas with reinforced handles, holds up to 22 lbs.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:09.838412",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 68,
+      "category": "clothing",
+      "source_name": "Kids Fleece-Lined Winter Gloves",
+      "source_description": "Touchscreen-compatible fingertips, adjustable wrist strap, available in sizes XS to L.",
+      "translations": {
+        "de": {
+          "translated_name": "Kinder Fleece-gefütterte Winterhandschuhe",
+          "translated_description": "Touchscreen-kompatible Fingerspitzen, verstellbares Armband, erhältlich in den Größen XS bis L.",
+          "original_name": "Kids Fleece-Lined Winter Gloves",
+          "original_description": "Touchscreen-compatible fingertips, adjustable wrist strap, available in sizes XS to L.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:06.838912",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Guantes de invierno con forro de huida para niños",
+          "translated_description": "Dedos compatibles con pantalla táctil, correa de muñeca ajustable, disponible en tamaños XS a L.",
+          "original_name": "Kids Fleece-Lined Winter Gloves",
+          "original_description": "Touchscreen-compatible fingertips, adjustable wrist strap, available in sizes XS to L.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:05.949223",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Gants d'hiver doublés de polaire pour enfants",
+          "translated_description": "Touchscreen-compatible des doigts, bracelet de poignet réglable, disponible en tailles XS à L.",
+          "original_name": "Kids Fleece-Lined Winter Gloves",
+          "original_description": "Touchscreen-compatible fingertips, adjustable wrist strap, available in sizes XS to L.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:06.411076",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 69,
+      "category": "home_appliances",
+      "source_name": "Philips 3000 Series Air Purifier",
+      "source_description": "HEPA filter removes 99.97% of particles, covers up to 480 sq ft, auto mode included.",
+      "translations": {
+        "es": {
+          "translated_name": "Purificador de aire de la serie Philips 3000",
+          "translated_description": "El filtro HEPA elimina el 99,97% de las partículas, cubre hasta 480 pies cuadrados, el modo automático incluido.",
+          "original_name": "Philips 3000 Series Air Purifier",
+          "original_description": "HEPA filter removes 99.97% of particles, covers up to 480 sq ft, auto mode included.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:10.343609",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Purificateur d'air série Philips 3000",
+          "translated_description": "Le filtre HEPA élimine 99,97% des particules, couvre jusqu'à 480 pieds carrés, mode automatique inclus.",
+          "original_name": "Philips 3000 Series Air Purifier",
+          "original_description": "HEPA filter removes 99.97% of particles, covers up to 480 sq ft, auto mode included.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:10.800010",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Luftreiniger der Serie Philips 3000",
+          "translated_description": "HEPA-Filter entfernt 99,97 % der Partikel, deckt bis zu 480 sq ft, Auto-Modus enthalten.",
+          "original_name": "Philips 3000 Series Air Purifier",
+          "original_description": "HEPA filter removes 99.97% of particles, covers up to 480 sq ft, auto mode included.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:11.257595",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 70,
+      "category": "home_appliances",
+      "source_name": "Instant Pot Duo 7-in-1 Electric Pressure Cooker",
+      "source_description": "6-quart capacity, pressure cooker, slow cooker, rice cooker, steamer, and saute pan.",
+      "translations": {
+        "fr": {
+          "translated_name": "Cuisinière de pression électrique 7-en-1 pour pot instantané",
+          "translated_description": "Capacité 6-quarts, cuisinière à pression, cuisinière lente, cuisinière à riz, vapeur et casserole.",
+          "original_name": "Instant Pot Duo 7-in-1 Electric Pressure Cooker",
+          "original_description": "6-quart capacity, pressure cooker, slow cooker, rice cooker, steamer, and saute pan.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:07.842813",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Cocinera eléctrica de presión de 7-en-1",
+          "translated_description": "Capacidad de 6 cuartetos, olla a presión, olla lenta, olla de arroz, vapor y sartén salteada.",
+          "original_name": "Instant Pot Duo 7-in-1 Electric Pressure Cooker",
+          "original_description": "6-quart capacity, pressure cooker, slow cooker, rice cooker, steamer, and saute pan.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:07.378445",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Sofort Pot Duo 7-in-1 elektrische Druckkocher",
+          "translated_description": "6-Quadrat-Kapazität, Druckkocher, langsamer Herd, Reiskocher, Dampfer und Saute Pfanne.",
+          "original_name": "Instant Pot Duo 7-in-1 Electric Pressure Cooker",
+          "original_description": "6-quart capacity, pressure cooker, slow cooker, rice cooker, steamer, and saute pan.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:08.412420",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 71,
+      "category": "home_appliances",
+      "source_name": "Dyson V12 Detect Slim Cordless Vacuum",
+      "source_description": "Laser dust detection, LCD screen shows particle count, 60-min battery runtime.",
+      "translations": {
+        "fr": {
+          "translated_name": "Dyson V12 Détecter un vide mince sans fil",
+          "translated_description": "Détection de poussières laser, écran LCD montre le nombre de particules, 60 minutes d'autonomie de la batterie.",
+          "original_name": "Dyson V12 Detect Slim Cordless Vacuum",
+          "original_description": "Laser dust detection, LCD screen shows particle count, 60-min battery runtime.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:05.073569",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Dyson V12 Detectar vacío delgado inalámbrico",
+          "translated_description": "Detección de polvo láser, pantalla LCD muestra el recuento de partículas, 60 minutos de funcionamiento de la batería.",
+          "original_name": "Dyson V12 Detect Slim Cordless Vacuum",
+          "original_description": "Laser dust detection, LCD screen shows particle count, 60-min battery runtime.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:04.575996",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Dyson V12 erkennt schlankes kabelloses Vakuum",
+          "translated_description": "Laserstaubdetektion, LCD-Bildschirm zeigt Partikelzahl, 60-min Batterielaufzeit.",
+          "original_name": "Dyson V12 Detect Slim Cordless Vacuum",
+          "original_description": "Laser dust detection, LCD screen shows particle count, 60-min battery runtime.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:05.488182",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 72,
+      "category": "home_appliances",
+      "source_name": "Bosch 500 Series Dishwasher 44 dBA",
+      "source_description": "PrecisionWash with intelligent sensors, third rack, 6 wash cycles, stainless steel tub.",
+      "translations": {
+        "es": {
+          "translated_name": "Lavavajillas Bosch serie 500 44 dBA",
+          "translated_description": "PrecisionWash con sensores inteligentes, tercer rack, 6 ciclos de lavado, bañera de acero inoxidable.",
+          "original_name": "Bosch 500 Series Dishwasher 44 dBA",
+          "original_description": "PrecisionWash with intelligent sensors, third rack, 6 wash cycles, stainless steel tub.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:13.119327",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Lave-vaisselle série Bosch 500 44 dBA",
+          "translated_description": "PrecisionWash avec capteurs intelligents, troisième rack, 6 cycles de lavage, baignoire en acier inoxydable.",
+          "original_name": "Bosch 500 Series Dishwasher 44 dBA",
+          "original_description": "PrecisionWash with intelligent sensors, third rack, 6 wash cycles, stainless steel tub.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:13.575227",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Bosch 500 Serie Geschirrspüler 44 dBA",
+          "translated_description": "PrecisionWash mit intelligenten Sensoren, drittes Rack, 6 Waschzyklen, Edelstahlwanne.",
+          "original_name": "Bosch 500 Series Dishwasher 44 dBA",
+          "original_description": "PrecisionWash with intelligent sensors, third rack, 6 wash cycles, stainless steel tub.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:13.960661",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 73,
+      "category": "sports",
+      "source_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+      "source_description": "Built-in GPS, heart rate monitoring, sleep tracking, 7-day battery, water resistant 50m.",
+      "translations": {
+        "es": {
+          "translated_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "translated_description": "GPS incorporado, monitorización de la frecuencia cardíaca, seguimiento del sueño, batería de 7 días, resistente al agua 50m.",
+          "original_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "original_description": "Built-in GPS, heart rate monitoring, sleep tracking, 7-day battery, water resistant 50m.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:11.744489",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "translated_description": "GPS intégré, surveillance de la fréquence cardiaque, suivi du sommeil, batterie de 7 jours, résistant à l'eau 50m.",
+          "original_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "original_description": "Built-in GPS, heart rate monitoring, sleep tracking, 7-day battery, water resistant 50m.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:12.226370",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "translated_description": "Eingebautes GPS, Herzfrequenzüberwachung, Schlafverfolgung, 7-Tage-Batterie, wasserdicht 50m.",
+          "original_name": "Fitbit Charge 6 Advanced Fitness Tracker",
+          "original_description": "Built-in GPS, heart rate monitoring, sleep tracking, 7-day battery, water resistant 50m.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:12.626849",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 74,
+      "category": "sports",
+      "source_name": "Yoga Mat Non-Slip 6mm Extra Thick",
+      "source_description": "Eco-friendly TPE foam, moisture-resistant surface, includes carrying strap and bag.",
+      "translations": {
+        "es": {
+          "translated_name": "Yoga Mat antideslizante 6mm extra grueso",
+          "translated_description": "Espuma TPE ecológica, superficie resistente a la humedad, incluye correa de transporte y bolsa.",
+          "original_name": "Yoga Mat Non-Slip 6mm Extra Thick",
+          "original_description": "Eco-friendly TPE foam, moisture-resistant surface, includes carrying strap and bag.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:14.382475",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Tapis de yoga antidérapant 6mm d'épaisseur supplémentaire",
+          "translated_description": "Mousse TPE écologique, surface résistante à l'humidité, comprend la sangle de transport et le sac.",
+          "original_name": "Yoga Mat Non-Slip 6mm Extra Thick",
+          "original_description": "Eco-friendly TPE foam, moisture-resistant surface, includes carrying strap and bag.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:14.900305",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Yoga-Matte rutschfest 6mm extra dick",
+          "translated_description": "Umweltfreundliche TPE-Schaum, feuchtigkeitsbeständige Oberfläche, beinhaltet Tragegurt und Tasche.",
+          "original_name": "Yoga Mat Non-Slip 6mm Extra Thick",
+          "original_description": "Eco-friendly TPE foam, moisture-resistant surface, includes carrying strap and bag.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:15.315518",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 75,
+      "category": "sports",
+      "source_name": "Adjustable Dumbbell Set 5 to 52 Pounds",
+      "source_description": "Replaces 15 sets of weights, dial selector adjusts in 2.5 lb increments, compact tray.",
+      "translations": {
+        "fr": {
+          "translated_name": "Ensemble de sonnettes réglables de 5 à 52 livres",
+          "translated_description": "Remplace 15 ensembles de poids, sélecteur de cadran s'ajuste en incréments de 2,5 lb, plateau compact.",
+          "original_name": "Adjustable Dumbbell Set 5 to 52 Pounds",
+          "original_description": "Replaces 15 sets of weights, dial selector adjusts in 2.5 lb increments, compact tray.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:03.565187",
+          "confidence": null,
+          "status": "completed"
+        },
+        "es": {
+          "translated_name": "Juego de mancuerna ajustable de 5 a 52 libras",
+          "translated_description": "Reemplaza 15 juegos de pesos, selector de dial ajusta en incrementos de 2,5 lb, bandeja compacta.",
+          "original_name": "Adjustable Dumbbell Set 5 to 52 Pounds",
+          "original_description": "Replaces 15 sets of weights, dial selector adjusts in 2.5 lb increments, compact tray.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:03.008111",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Einstellbare Hantel Set 5 bis 52 Pfund",
+          "translated_description": "Ersetzt 15 Sätze von Gewichten, Wähl-Wähl-Einstellung in 2,5 lb-Schritten, kompakte Schale.",
+          "original_name": "Adjustable Dumbbell Set 5 to 52 Pounds",
+          "original_description": "Replaces 15 sets of weights, dial selector adjusts in 2.5 lb increments, compact tray.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:04.090020",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 76,
+      "category": "sports",
+      "source_name": "Carbon Fiber Road Bicycle Helmet",
+      "source_description": "MIPS protection system, 18 ventilation channels, aerodynamic shell, 240g lightweight.",
+      "translations": {
+        "es": {
+          "translated_name": "Casco de bicicleta de carretera de fibra de carbono",
+          "translated_description": "Sistema de protección MIPS, 18 canales de ventilación, carcasa aerodinámica, 240g ligero.",
+          "original_name": "Carbon Fiber Road Bicycle Helmet",
+          "original_description": "MIPS protection system, 18 ventilation channels, aerodynamic shell, 240g lightweight.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:15.785497",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Casque de vélo de route en fibre de carbone",
+          "translated_description": "Système de protection MIPS, 18 canaux de ventilation, coque aérodynamique, 240g léger.",
+          "original_name": "Carbon Fiber Road Bicycle Helmet",
+          "original_description": "MIPS protection system, 18 ventilation channels, aerodynamic shell, 240g lightweight.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:16.214475",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Carbon Fiber Road Fahrradhelm",
+          "translated_description": "MIPS-Schutzsystem, 18 Lüftungskanäle, aerodynamische Hülle, 240g leicht.",
+          "original_name": "Carbon Fiber Road Bicycle Helmet",
+          "original_description": "MIPS protection system, 18 ventilation channels, aerodynamic shell, 240g lightweight.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:16.574210",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 77,
+      "category": "food",
+      "source_name": "Organic Almond Milk Protein Shake Powder",
+      "source_description": "25g plant protein per serving, almond milk base, no artificial sweeteners, gluten-free.",
+      "translations": {
+        "es": {
+          "translated_name": "Polvo de agitado de proteínas de leche de almendra orgánica",
+          "translated_description": "25g proteína vegetal por porción, base de leche de almendras, sin edulcorantes artificiales, sin gluten.",
+          "original_name": "Organic Almond Milk Protein Shake Powder",
+          "original_description": "25g plant protein per serving, almond milk base, no artificial sweeteners, gluten-free.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:17.112640",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Poudre à agiter de protéines de lait d'amande biologique",
+          "translated_description": "25g de protéines végétales par portion, base de lait d'amande, pas d'édulcorants artificiels, sans gluten.",
+          "original_name": "Organic Almond Milk Protein Shake Powder",
+          "original_description": "25g plant protein per serving, almond milk base, no artificial sweeteners, gluten-free.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:17.676989",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Bio Mandelmilch Protein schütteln Pulver",
+          "translated_description": "25g Pflanzenprotein pro Portion, Mandelmilchbasis, keine künstlichen Süßungsmittel, glutenfrei.",
+          "original_name": "Organic Almond Milk Protein Shake Powder",
+          "original_description": "25g plant protein per serving, almond milk base, no artificial sweeteners, gluten-free.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:18.091857",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 78,
+      "category": "food",
+      "source_name": "Whole Grain Oat and Honey Granola Bar",
+      "source_description": "Made with rolled oats, wildflower honey, and sunflower seeds. No high-fructose corn syrup.",
+      "translations": {
+        "es": {
+          "translated_name": "Avena entera de grano y granola de miel",
+          "translated_description": "Fabricado con avena laminada, miel de flor silvestre y semillas de girasol. Sin jarabe de maíz de alta fructosa.",
+          "original_name": "Whole Grain Oat and Honey Granola Bar",
+          "original_description": "Made with rolled oats, wildflower honey, and sunflower seeds. No high-fructose corn syrup.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:18.676720",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Barre de Granola à l'avoine et au miel entiers",
+          "translated_description": "Fabriqué avec de l'avoine roulée, du miel de fleurs sauvages et des graines de tournesol. Pas de sirop de maïs à haute teneur en fructose.",
+          "original_name": "Whole Grain Oat and Honey Granola Bar",
+          "original_description": "Made with rolled oats, wildflower honey, and sunflower seeds. No high-fructose corn syrup.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:19.306001",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Ganze Körner Hafer und Honig Granola Bar",
+          "translated_description": "Hergestellt aus gerolltem Hafer, Wildblumenhonig und Sonnenblumenkernen. Kein hochfruktoser Maissirup.",
+          "original_name": "Whole Grain Oat and Honey Granola Bar",
+          "original_description": "Made with rolled oats, wildflower honey, and sunflower seeds. No high-fructose corn syrup.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:19.785096",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 79,
+      "category": "food",
+      "source_name": "Cold-Pressed Extra Virgin Olive Oil 500ml",
+      "source_description": "Single-origin Greek Koroneiki olives, harvested November 2024, acidity below 0.2%.",
+      "translations": {
+        "es": {
+          "translated_name": "Aceite de oliva virgen extra prensado en frío 500ml",
+          "translated_description": "Aceitunas griegas Koroneiki de origen único, cosechadas en noviembre de 2024, acidez por debajo del 0,2%.",
+          "original_name": "Cold-Pressed Extra Virgin Olive Oil 500ml",
+          "original_description": "Single-origin Greek Koroneiki olives, harvested November 2024, acidity below 0.2%.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:20.318060",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Huile d'olive vierge extra pressée à froid 500ml",
+          "translated_description": "Olives grecques à une seule origine Koroneiki, récoltées en novembre 2024, acidité inférieure à 0,2 %.",
+          "original_name": "Cold-Pressed Extra Virgin Olive Oil 500ml",
+          "original_description": "Single-origin Greek Koroneiki olives, harvested November 2024, acidity below 0.2%.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:20.857037",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Kaltgepresstes natives Olivenöl Extra 500ml",
+          "translated_description": "Griechische Koroneiki-Oliven mit einem einzigen Ursprung, geerntet im November 2024, Säure unter 0,2%.",
+          "original_name": "Cold-Pressed Extra Virgin Olive Oil 500ml",
+          "original_description": "Single-origin Greek Koroneiki olives, harvested November 2024, acidity below 0.2%.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:21.297655",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    },
+    {
+      "product_id": 80,
+      "category": "food",
+      "source_name": "Dark Roast Ethiopian Single Origin Coffee Beans",
+      "source_description": "Whole bean 250g, tasting notes of dark chocolate and dried cherry, roasted weekly.",
+      "translations": {
+        "es": {
+          "translated_name": "Judías de café de origen único etíope asado oscuro",
+          "translated_description": "Judía entera 250g, notas de degustación de chocolate oscuro y cereza seca, asada semanalmente.",
+          "original_name": "Dark Roast Ethiopian Single Origin Coffee Beans",
+          "original_description": "Whole bean 250g, tasting notes of dark chocolate and dried cherry, roasted weekly.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:21.757551",
+          "confidence": null,
+          "status": "completed"
+        },
+        "fr": {
+          "translated_name": "Haricots à café d'origine éthiopienne d'origine unique",
+          "translated_description": "Haricot entier 250g, goûtant des notes de chocolat noir et de cerise séchée, torréfié chaque semaine.",
+          "original_name": "Dark Roast Ethiopian Single Origin Coffee Beans",
+          "original_description": "Whole bean 250g, tasting notes of dark chocolate and dried cherry, roasted weekly.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:22.290102",
+          "confidence": null,
+          "status": "completed"
+        },
+        "de": {
+          "translated_name": "Dunkle Röst Äthiopische Single Herkunft Kaffeebohnen",
+          "translated_description": "Ganze Bohne 250g, Verkostung Noten von dunkler Schokolade und getrockneter Kirsche, wöchentlich geröstet.",
+          "original_name": "Dark Roast Ethiopian Single Origin Coffee Beans",
+          "original_description": "Whole bean 250g, tasting notes of dark chocolate and dried cherry, roasted weekly.",
+          "is_edited": false,
+          "created_at": "2026-03-05T22:45:22.741873",
+          "confidence": null,
+          "status": "completed"
+        }
+      }
+    }
+  ],
+  "test_services_output": "NOT FOUND",
+  "network_isolation": "NETWORK ID     NAME                    DRIVER    SCOPE\n43c451b9f2d3   bridge                  bridge    local\n82cae2549778   host                    host      local\nc9e7ba41a380   microservices-network   bridge    local\n51f0fee4c26b   none                    null      local",
+  "translation_statistics": {
+    "total_translations": 186,
+    "pending_review": 186,
+    "edited_translations": 0,
+    "edit_rate": 0.0
+  },
+  "raw_translation_sample": [
+    {
+      "id": 129,
+      "original_request_id": 61,
+      "language": "es",
+      "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+      "translated_name": "ASUS ROG Strix Monitor de juegos de 27 pulgadas",
+      "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+      "translated_description": "Pantalla IPS QHD 170Hz con tiempo de respuesta de 1ms, HDR400 y compatible con G-Sync.",
+      "is_edited": false,
+      "edited_name": null,
+      "edited_description": null,
+      "feedback": null,
+      "created_at": "2026-03-05T22:44:53.654133"
+    },
+    {
+      "id": 130,
+      "original_request_id": 61,
+      "language": "fr",
+      "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+      "translated_name": "ASUS ROG Strix Moniteur de jeu de 27 pouces",
+      "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+      "translated_description": "Affichage IPS QHD 170Hz avec temps de réponse de 1ms, HDR400 et G-Sync compatible.",
+      "is_edited": false,
+      "edited_name": null,
+      "edited_description": null,
+      "feedback": null,
+      "created_at": "2026-03-05T22:44:54.204676"
+    },
+    {
+      "id": 131,
+      "original_request_id": 61,
+      "language": "de",
+      "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+      "translated_name": "ASUS ROG Strix 27-Zoll Gaming Monitor",
+      "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+      "translated_description": "QHD 170Hz IPS-Display mit 1ms Ansprechzeit, HDR400 und G-Sync kompatibel.",
+      "is_edited": false,
+      "edited_name": null,
+      "edited_description": null,
+      "feedback": null,
+      "created_at": "2026-03-05T22:44:54.689524"
+    }
+  ]
+}

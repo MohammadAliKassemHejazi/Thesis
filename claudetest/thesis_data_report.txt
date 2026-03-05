@@ -1,0 +1,313 @@
+THESIS DATA COLLECTION — 2026-03-05T23:44:21.059673
+
+
+============================================================
+  1. SYSTEM INFORMATION
+============================================================
+Python: 3.13.12 (tags/v3.13.12:1cbe481, Feb  3 2026, 18:22:25) [MSC v.1944 64 bit (AMD64)]
+
+-- Windows version --
+Microsoft Windows [Version 10.0.26200.7840]
+platform: 10.0.26200 / AMD64
+
+-- CPU --
+'wmic' is not recognized as an internal or external command,
+operable program or batch file.
+
+-- RAM --
+Total Physical Memory:         16,085 MB
+
+-- Docker version --
+Docker version 29.2.0, build 0b9d198
+Docker Compose version v5.0.2
+
+-- Docker resource limits (CPUs / Memory visible inside Docker) --
+CPUs: 20
+ Total Memory: 7.609GiB
+
+
+============================================================
+  2. DOCKER CONTAINER STATUS
+============================================================
+NAME                  IMAGE                                                   COMMAND                  SERVICE               CREATED             STATUS                         PORTS
+product-db            postgres:15-alpine                                      "docker-entrypoint.sâ€¦"   product-db            About an hour ago   Up About an hour (healthy)     0.0.0.0:5432->5432/tcp, [::]:5432->5432/tcp
+product-service       microservices-translation-project-product-service       "docker-entrypoint.sâ€¦"   product-service       About an hour ago   Up About an hour (unhealthy)   0.0.0.0:3000->3000/tcp, [::]:3000->3000/tcp
+translation-db        postgres:15-alpine                                      "docker-entrypoint.sâ€¦"   translation-db        About an hour ago   Up About an hour (healthy)     0.0.0.0:5433->5432/tcp, [::]:5433->5432/tcp
+translation-service   microservices-translation-project-translation-service   "uvicorn app.main:apâ€¦"   translation-service   About an hour ago   Up About an hour (unhealthy)   0.0.0.0:3001->3001/tcp, [::]:3001->3001/tcp
+time="2026-03-05T23:44:31+01:00" level=warning msg="C:\\Users\\USER\\OneDrive\\Desktop\\Thesis\\final\\microservices-translation-project\\docker-compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+
+-- Images --
+REPOSITORY                                              TAG         SIZE
+microservices-translation-project-translation-service   latest      16.2GB
+microservices-translation-project-product-service       latest      320MB
+biomimic-dentistry-hub-client                           latest      3.65GB
+biomimic-dentistry-hub-server                           latest      462MB
+postgres                                                15-alpine   392MB
+postgres                                                15          633MB
+
+============================================================
+  3. SERVICE HEALTH CHECK
+============================================================
+product-service: HTTP 200  body={"status":"healthy"}
+translation-service: HTTP 200  body={"status":"healthy","models_loaded":3,"supported_languages":["es","fr","de"]}
+
+============================================================
+  4. API RESPONSE TIME MEASUREMENT
+============================================================
+Each endpoint called 7 times. Reporting median/min/max in ms.
+
+  [Temp product id=41]
+
+Product Service:
+  GET    GET /products                                       median=7.2ms  min=5.0ms  max=16.5ms  HTTP=200
+  GET    GET /products/:id                                   median=4.9ms  min=4.5ms  max=6.9ms  HTTP=200
+  GET    GET /products/:id?lang=es                           median=9.0ms  min=7.9ms  max=19.8ms  HTTP=200
+  POST   POST /products (no translation)                     median=6.6ms  min=5.9ms  max=24.6ms  HTTP=201
+  POST   POST /products (translation fired)                  median=7.6ms  min=7.1ms  max=8.5ms  HTTP=201
+  PUT    PUT /products/:id (no translation)                  median=8.3ms  min=8.0ms  max=21.2ms  HTTP=200
+
+  [Creating product for DELETE timing, waiting for 1 language translation...]
+  DELETE DELETE /products/:id (sync translation cleanup)     median=5.2ms  min=4.8ms  max=15.7ms  HTTP=404
+  GET    GET /health                                         median=3.6ms  min=3.2ms  max=12.7ms  HTTP=200
+
+Translation Service:
+  GET    GET /translations                                   median=8.0ms  min=7.8ms  max=9.6ms  HTTP=200
+  GET    GET /translations/statistics                        median=6.5ms  min=5.6ms  max=15.9ms  HTTP=200
+  GET    GET /dashboard                                      median=5.1ms  min=4.5ms  max=22.4ms  HTTP=200
+  GET    GET /health                                         median=5.0ms  min=3.9ms  max=6.1ms  HTTP=200
+
+============================================================
+  5. TRANSLATION PIPELINE TIMING (end-to-end)
+============================================================
+Time from POST /products until all 3 translations appear in GET /translations/{id}
+
+  Creating: 'Smart LED Desk Lamp'
+    POST returned 8ms  id=57 — waiting...
+    All 3 translations present after 1.2s from POST
+      lang=es  created_at=2026-03-05T22:44:39.165628
+      lang=fr  created_at=2026-03-05T22:44:39.559218
+      lang=de  created_at=2026-03-05T22:44:39.919235
+  Creating: 'Stainless Steel Water Bottle 750ml'
+    POST returned 8ms  id=58 — waiting...
+    All 3 translations present after 1.3s from POST
+      lang=es  created_at=2026-03-05T22:44:40.422743
+      lang=fr  created_at=2026-03-05T22:44:40.874485
+      lang=de  created_at=2026-03-05T22:44:41.278034
+  Creating: 'Wireless Bluetooth Speaker Portable'
+    POST returned 8ms  id=59 — waiting...
+    All 3 translations present after 1.2s from POST
+      lang=es  created_at=2026-03-05T22:44:41.684991
+      lang=fr  created_at=2026-03-05T22:44:42.048195
+      lang=de  created_at=2026-03-05T22:44:42.458749
+
+============================================================
+  6. DOCKER RESOURCE USAGE
+============================================================
+-- Active snapshot (~3s after triggering a translation) --
+NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O
+product-service       0.18%     53.77MiB / 7.609GiB   0.69%     318kB / 244kB
+translation-service   0.48%     1.421GiB / 7.609GiB   18.67%    4.37MB / 6.04MB
+product-db            0.04%     37.04MiB / 7.609GiB   0.48%     61kB / 129kB
+translation-db        0.00%     42.32MiB / 7.609GiB   0.54%     2.22MB / 3.21MB
+
+-- Idle snapshot (after translation completes) --
+NAME                  CPU %     MEM USAGE / LIMIT     MEM %     NET I/O
+product-service       0.45%     53.93MiB / 7.609GiB   0.69%     319kB / 245kB
+translation-service   0.62%     1.419GiB / 7.609GiB   18.66%    4.37MB / 6.04MB
+product-db            0.07%     37.27MiB / 7.609GiB   0.48%     61kB / 129kB
+translation-db        0.05%     42.37MiB / 7.609GiB   0.54%     2.22MB / 3.21MB
+
+============================================================
+  7. TRANSLATION QUALITY TEST SET (20 products)
+============================================================
+Creating 20 products and collecting translations.
+
+  [01/20] ASUS ROG Strix 27-inch Gaming Monitor
+    queued id=61
+  [02/20] Logitech MX Master 3S Wireless Mouse
+    queued id=62
+  [03/20] Sony WH-1000XM5 Noise Cancelling Headphones
+    queued id=63
+  [04/20] Samsung 1TB NVMe SSD 980 Pro
+    queued id=64
+  [05/20] Men's Merino Wool Crew Neck Sweater
+    queued id=65
+  [06/20] Women's Waterproof Hiking Jacket
+    queued id=66
+  [07/20] Unisex Cotton Canvas Tote Bag
+    queued id=67
+  [08/20] Kids Fleece-Lined Winter Gloves
+    queued id=68
+  [09/20] Philips 3000 Series Air Purifier
+    queued id=69
+  [10/20] Instant Pot Duo 7-in-1 Electric Pressure Cooker
+    queued id=70
+  [11/20] Dyson V12 Detect Slim Cordless Vacuum
+    queued id=71
+  [12/20] Bosch 500 Series Dishwasher 44 dBA
+    queued id=72
+  [13/20] Fitbit Charge 6 Advanced Fitness Tracker
+    queued id=73
+  [14/20] Yoga Mat Non-Slip 6mm Extra Thick
+    queued id=74
+  [15/20] Adjustable Dumbbell Set 5 to 52 Pounds
+    queued id=75
+  [16/20] Carbon Fiber Road Bicycle Helmet
+    queued id=76
+  [17/20] Organic Almond Milk Protein Shake Powder
+    queued id=77
+  [18/20] Whole Grain Oat and Honey Granola Bar
+    queued id=78
+  [19/20] Cold-Pressed Extra Virgin Olive Oil 500ml
+    queued id=79
+  [20/20] Dark Roast Ethiopian Single Origin Coffee Beans
+    queued id=80
+
+Collecting translations (waiting for each to appear)...
+
+  [01/20] id=61 [electronics]
+    3 translations in 24.0s
+  [02/20] id=62 [electronics]
+    3 translations in 0.0s
+  [03/20] id=63 [electronics]
+    3 translations in 0.0s
+  [04/20] id=64 [electronics]
+    3 translations in 0.0s
+  [05/20] id=65 [clothing]
+    3 translations in 0.0s
+  [06/20] id=66 [clothing]
+    3 translations in 0.0s
+  [07/20] id=67 [clothing]
+    3 translations in 0.0s
+  [08/20] id=68 [clothing]
+    3 translations in 0.0s
+  [09/20] id=69 [home_appliances]
+    3 translations in 0.0s
+  [10/20] id=70 [home_appliances]
+    3 translations in 0.0s
+  [11/20] id=71 [home_appliances]
+    3 translations in 0.0s
+  [12/20] id=72 [home_appliances]
+    3 translations in 0.0s
+  [13/20] id=73 [sports]
+    3 translations in 0.0s
+  [14/20] id=74 [sports]
+    3 translations in 0.0s
+  [15/20] id=75 [sports]
+    3 translations in 0.0s
+  [16/20] id=76 [sports]
+    3 translations in 0.0s
+  [17/20] id=77 [food]
+    3 translations in 0.0s
+  [18/20] id=78 [food]
+    3 translations in 0.0s
+  [19/20] id=79 [food]
+    3 translations in 0.0s
+  [20/20] id=80 [food]
+    3 translations in 0.0s
+
+--- Sample: first product ---
+id=61  [electronics]
+  SRC name: ASUS ROG Strix 27-inch Gaming Monitor
+  SRC desc: QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.
+  [es] name: ASUS ROG Strix Monitor de juegos de 27 pulgadas
+  [es] desc: Pantalla IPS QHD 170Hz con tiempo de respuesta de 1ms, HDR400 y compatible con G-Sync.
+  [fr] name: ASUS ROG Strix Moniteur de jeu de 27 pouces
+  [fr] desc: Affichage IPS QHD 170Hz avec temps de réponse de 1ms, HDR400 et G-Sync compatible.
+  [de] name: ASUS ROG Strix 27-Zoll Gaming Monitor
+  [de] desc: QHD 170Hz IPS-Display mit 1ms Ansprechzeit, HDR400 und G-Sync kompatibel.
+
+============================================================
+  8. test_services.py OUTPUT
+============================================================
+WARNING: test_services.py not found. Run from repo root.
+
+============================================================
+  9. NETWORK ISOLATION VERIFICATION
+============================================================
+-- Docker networks --
+NETWORK ID     NAME                    DRIVER    SCOPE
+43c451b9f2d3   bridge                  bridge    local
+82cae2549778   host                    host      local
+c9e7ba41a380   microservices-network   bridge    local
+51f0fee4c26b   none                    null      local
+
+-- product-service (product-service) --
+{"microservices-network":{"IPAMConfig":null,"Links":null,"Aliases":["product-service","product-service"],"DriverOpts":null,"GwPriority":0,"NetworkID":"c9e7ba41a380b0fa66da889658f05f2fde6e8f024a65da0477e468b601178b6e","EndpointID":"d5b0f5501019d03ee21f9ce8c8c094630cbb4758b0d888a3b95ecd5bd3da6dc3","Gateway":"172.18.0.1","IPAddress":"172.18.0.5","MacAddress":"6a:04:93:62:a4:67","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"DNSNames":["product-service","998eba3ae3fe"]}}
+
+-- translation-service (translation-service) --
+{"microservices-network":{"IPAMConfig":null,"Links":null,"Aliases":["translation-service","translation-service"],"DriverOpts":null,"GwPriority":0,"NetworkID":"c9e7ba41a380b0fa66da889658f05f2fde6e8f024a65da0477e468b601178b6e","EndpointID":"3d0fc6a9f47a7bcf03104a188c8cfa24e019a00cde1f2d29868cb151da1265bc","Gateway":"172.18.0.1","IPAddress":"172.18.0.4","MacAddress":"a2:6d:f1:af:51:df","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"DNSNames":["translation-service","b30ea7c0a4d0"]}}
+
+-- product-db (product-db) --
+{"microservices-network":{"IPAMConfig":null,"Links":null,"Aliases":["product-db","product-db"],"DriverOpts":null,"GwPriority":0,"NetworkID":"c9e7ba41a380b0fa66da889658f05f2fde6e8f024a65da0477e468b601178b6e","EndpointID":"0af84fa1ae8001ba07e0e93ab9798a2e9e554495bd25f3c53d90d6dc1871dee9","Gateway":"172.18.0.1","IPAddress":"172.18.0.3","MacAddress":"02:02:ab:39:6f:77","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"DNSNames":["product-db","69b4eadedf61"]}}
+
+-- translation-db (translation-db) --
+{"microservices-network":{"IPAMConfig":null,"Links":null,"Aliases":["translation-db","translation-db"],"DriverOpts":null,"GwPriority":0,"NetworkID":"c9e7ba41a380b0fa66da889658f05f2fde6e8f024a65da0477e468b601178b6e","EndpointID":"403b82409b06ba50864299136aa56be95d151cd7c8893fe308e1a2a2b86512e4","Gateway":"172.18.0.1","IPAddress":"172.18.0.2","MacAddress":"26:19:4a:eb:f0:df","IPPrefixLen":16,"IPv6Gateway":"","GlobalIPv6Address":"","GlobalIPv6PrefixLen":0,"DNSNames":["translation-db","ba3498c3f85c"]}}
+
+-- Cross-DB access test (expects FAILURE) --
+Trying to reach product-db:5432 from translation-service:
+  [thesis-translation-service-1]: Error response from daemon: No such container: thesis-translation-service-1
+
+============================================================
+  10. TRANSLATION STATISTICS
+============================================================
+HTTP 200
+{
+  "total_translations": 186,
+  "pending_review": 186,
+  "edited_translations": 0,
+  "edit_rate": 0.0
+}
+
+============================================================
+  11. RAW TRANSLATION RESPONSE SAMPLE
+============================================================
+GET /translations/61 → HTTP 200
+[
+  {
+    "id": 129,
+    "original_request_id": 61,
+    "language": "es",
+    "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+    "translated_name": "ASUS ROG Strix Monitor de juegos de 27 pulgadas",
+    "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+    "translated_description": "Pantalla IPS QHD 170Hz con tiempo de respuesta de 1ms, HDR400 y compatible con G-Sync.",
+    "is_edited": false,
+    "edited_name": null,
+    "edited_description": null,
+    "feedback": null,
+    "created_at": "2026-03-05T22:44:53.654133"
+  },
+  {
+    "id": 130,
+    "original_request_id": 61,
+    "language": "fr",
+    "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+    "translated_name": "ASUS ROG Strix Moniteur de jeu de 27 pouces",
+    "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+    "translated_description": "Affichage IPS QHD 170Hz avec temps de réponse de 1ms, HDR400 et G-Sync compatible.",
+    "is_edited": false,
+    "edited_name": null,
+    "edited_description": null,
+    "feedback": null,
+    "created_at": "2026-03-05T22:44:54.204676"
+  },
+  {
+    "id": 131,
+    "original_request_id": 61,
+    "language": "de",
+    "original_name": "ASUS ROG Strix 27-inch Gaming Monitor",
+    "translated_name": "ASUS ROG Strix 27-Zoll Gaming Monitor",
+    "original_description": "QHD 170Hz IPS display with 1ms response time, HDR400, and G-Sync compatible.",
+    "translated_description": "QHD 170Hz IPS-Display mit 1ms Ansprechzeit, HDR400 und G-Sync kompatibel.",
+    "is_edited": false,
+    "edited_name": null,
+    "edited_description": null,
+    "feedback": null,
+    "created_at": "2026-03-05T22:44:54.689524"
+  }
+]
+
+============================================================
+  WRITING OUTPUT FILES
+============================================================
