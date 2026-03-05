@@ -3,7 +3,7 @@ version: '3.8'
 services:
   # Product Database
   product-db:
-    image: postgres:15-alpine
+    image: public.ecr.aws/docker/library/postgres:15-alpine
     container_name: product-db
     environment:
       POSTGRES_USER: product_user
@@ -21,7 +21,7 @@ services:
 
   # Translation Database
   translation-db:
-    image: postgres:15-alpine
+    image: public.ecr.aws/docker/library/postgres:15-alpine
     container_name: translation-db
     environment:
       POSTGRES_USER: translation_user
