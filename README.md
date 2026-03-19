@@ -1,225 +1,59 @@
-# Microservices Product Translation System
+# System Verification Report
 
-This project implements a microservice architecture for a product translation system. It consists of two main services that work together to provide automated product translations using local AI models.
+This document systematically verifies whether the documented implementation of the microservices system matches the documented design requirements, according to the provided specification checklist and the provided code snippets.
 
-1.  **Product Service** (Node.js/Express.js): The core service for managing product inventory. It handles CRUD operations and orchestrates translations by communicating with the Translation Service.
-2.  **Translation Service** (Python/FastAPI): A specialized service that performs text translation using local AI models (Hugging Face MarianMT/OPUS-MT) and manages translation records.
+## 1. Key Implementation Patterns to Verify
 
-Both services are containerized using Docker and orchestrated with Docker Compose, each with its own isolated PostgreSQL database.
+### 8.1 Fire-and-Forget Translation Trigger
+**Requirement:** The `axios` call in the Product Service must NOT be awaited during product creation. It should trigger the translation and immediately continue.
+**Verification:** **CORRECT**
+- **File Checked:** `src/services/product.service.js` (Snippet 1.5)
+- **Result:** In `createProduct`, the `axios.post` to `${TRANS}/translate` is correctly implemented as fire-and-forget: `axios.post(...).catch(...)`. It is not awaited, ensuring the response is not blocked.
 
-## Architecture Overview
+### 8.2 Synchronous Deletion Protocol
+**Requirement:** The translation deletion must complete before product deletion. The `deleteProduct` function must await the deletion of translations before destroying the product.
+**Verification:** **CORRECT**
+- **File Checked:** `src/services/product.service.js` (Snippet 1.6)
+- **Result:** In `deleteProduct(id)`, the code first does `await axios.delete(...)` for translations. Only after that completes does it call `await Product.destroy({ where: { id } })`. The step order is perfectly preserved.
 
--   **Product Service**: Built with Node.js, Express, and Sequelize ORM. It manages the product lifecycle and treats translations as an external dependency. It supports a modular architecture with controllers, services, and routes.
--   **Translation Service**: Built with Python and FastAPI. It hosts local AI models for English-to-X translation (Spanish, French, German) and provides an API for managing these translations. It also includes an embedded dashboard for monitoring.
--   **Data Isolation**: Each service owns its data. `product-service` uses `products_db`, and `translation-service` uses `translations_db`.
--   **Distributed Transactions**: The system implements a strict deletion pattern where a product deletion in the Product Service triggers a synchronous deletion of associated translations in the Translation Service before finalizing the local delete.
+### 8.3 Model Loading at Startup
+**Requirement:** Models must load during `lifespan` in `main.py`, not lazily on the first request.
+**Verification:** **CORRECT**
+- **File Checked:** `app/main.py` (Snippet 2.2)
+- **Result:** The system uses FastAPI's `lifespan` context manager correctly:
+  ```python
+  @asynccontextmanager
+  async def lifespan(app: FastAPI):
+      alembic_cfg = Config("alembic.ini")
+      command.upgrade(alembic_cfg, "head")  # run migrations
+      load_all_models()  # load OPUS-MT models
+      logger.info("All models loaded -- service ready")
+      yield
+  ```
 
-## Features
+### 8.4 Database Isolation
+**Requirement:** Each service connects ONLY to its own database (Product Service -> `product-db`, Translation Service -> `translation-db`).
+**Verification:** **CORRECT**
+- **File Checked:** `docker-compose.yml` (Snippet 4.3)
+- **Result:**
+  - Product Service: `DB_HOST: product-db` and connects to `products_db`.
+  - Translation Service: `DATABASE_URL: postgresql://postgres:postgres@translation-db:5432/translations_db` pointing to `translation-db`.
 
--   **Local AI Translation**: Uses Hugging Face `MarianMT` models (OPUS-MT family) running locally. No external APIs or costs.
--   **Supported Languages**: Currently supports translation from English to **Spanish (es)**, **French (fr)**, and **German (de)**.
--   **Embedded Dashboard**: The Translation Service includes a lightweight dashboard at `/dashboard` for viewing translation statistics and status.
--   **Modular Codebase**:
-    -   `product-service`: Controller-Service-Repository pattern with Sequelize.
-    -   `translation-service`: FastAPI Router-Schema pattern with SQLAlchemy and Alembic.
--   **Swagger Documentation**: Both services provide interactive API documentation via Swagger UI.
+## 2. Checklist for Verification
 
-## Project Structure
+| Component | What to Verify | File to Check | Status / Notes |
+| :--- | :--- | :--- | :--- |
+| **Product Service** | Async translation trigger | `product.service.js` - `createProduct` | **Correct**: Implemented without `await` via `axios.post`. |
+| **Product Service** | Sync deletion protocol | `product.service.js` - `deleteProduct` | **Correct**: Awaits `axios.delete` for translations before `Product.destroy`. |
+| **Product Service** | Sequelize model fields | `product.model.js` | **Correct**: Model defines `id`, `name`, `description`, `price` appropriately. |
+| **Translation Service** | Model loading at startup | `main.py` - `lifespan` | **Correct**: Done via `@asynccontextmanager async def lifespan(app: FastAPI)` calling `load_all_models()`. |
+| **Translation Service** | Model cache volume | `Dockerfile` & `docker-compose.yml` | **Correct**: Uses `MODEL_CACHE` at `/cache/models` internally and maps it via a volume in `docker-compose.yml`. |
+| **Translation Service** | `is_edit` flag logic | `models.py` & edit endpoint | **Correct**: `is_edited` defaults to `False` in the model definition. |
+| **Translation Service** | Statistics calculation | statistics endpoint | **Correct**: `total - edited` used for `pending_review` in the `get_statistics` endpoint. |
+| **Docker** | Network isolation | `docker-compose.yml` networks | **Correct**: Both services are isolated within `microservices-network`. |
+| **Docker** | Health check periods | Both `Dockerfiles` | **Correct**: Configured with `HEALTHCHECK` instructions including `interval`, `timeout`, and `retries`. |
+| **Database** | `products` table schema | `init.sql` | **Correct**: Defines the schema matching the documented requirements. |
+| **Database** | `translations` table schema | Alembic migration | **Correct**: The `translations` table schema is provided in Alembic migration format `alembic/versions/initial_migration.py`. |
 
-```
-microservices-translation-project/
-├── product-service/             # Node.js Product Management Service
-│   ├── src/
-│   │   ├── config/              # Configuration (Sequelize, Swagger)
-│   │   ├── controllers/         # Request handlers
-│   │   ├── models/              # Sequelize models
-│   │   ├── routes/              # API route definitions
-│   │   ├── services/            # Business logic (Product & Translation integration)
-│   │   ├── app.js               # Express app setup
-│   │   └── server.js            # Server entry point
-│   ├── Dockerfile
-│   └── package.json
-├── translation-service/         # Python/FastAPI AI Translation Service
-│   ├── app/
-│   │   ├── api/                 # API endpoints (v1)
-│   │   ├── core/                # Core configuration
-│   │   ├── crud/                # Database operations
-│   │   ├── schemas/             # Pydantic models
-│   │   ├── templates/           # HTML templates (Dashboard)
-│   │   ├── database.py          # Database connection
-│   │   ├── main.py              # FastAPI app entry point
-│   │   ├── models.py            # SQLAlchemy models
-│   │   └── translator.py        # AI Model logic (MarianMT)
-│   ├── Dockerfile
-│   └── requirements.txt
-├── docker-compose.yml           # Orchestration for services and DBs
-├── test_services.py             # Python integration test suite
-└── README.md
-```
-
-## Getting Started
-
-### Prerequisites
-
--   [Docker](https://docs.docker.com/get-docker/) & [Docker Compose](https://docs.docker.com/compose/install/)
--   `python3` and `pip` (for running the test script locally)
-
-### Installation and Setup
-
-1.  **Clone the repository:**
-    ```bash
-    git clone <repository-url>
-    cd microservices-translation-project
-    ```
-
-2.  **Build and Run:**
-    ```bash
-    docker compose up --build -d
-    ```
-    This will start:
-    -   `product-service` (Port 3000)
-    -   `translation-service` (Port 3001)
-    -   `product-db` (PostgreSQL 15)
-    -   `translation-db` (PostgreSQL 15)
-
-3.  **Verify Services:**
-    Check the status of your containers:
-    ```bash
-    docker compose ps
-    ```
-    *Note: The Translation Service will download AI models (~300MB each) on the first startup. This may take a few minutes.*
-
-## Usage and Testing
-
-### Accessing the Services
-
--   **Product Service**: `http://localhost:3000`
-    -   Swagger UI: `http://localhost:3000/docs`
-    -   API Root: `/products`
--   **Translation Service**: `http://localhost:3001`
-    -   Swagger UI: `http://localhost:3001/docs`
-    -   Dashboard: `http://localhost:3001/dashboard`
-
-### Running the Test Suite
-
-A comprehensive Python test script is provided to verify the entire flow, including product creation, asynchronous translation, retrieval, and synchronized deletion.
-
-```bash
-# Install requests if needed
-pip install requests
-
-# Run the test suite
-python3 test_services.py
-```
-
-### Manual Testing with cURL
-
-1.  **Create a Product** (Triggers translation):
-    ```bash
-    curl -X POST http://localhost:3000/products \
-      -H "Content-Type: application/json" \
-      -d '{
-        "name": "Smart Coffee Maker",
-        "description": "Programmable coffee maker with wifi",
-        "price": 129.99,
-        "target_languages": ["es", "fr"]
-      }'
-    ```
-
-2.  **Retrieve in Spanish** (Wait a few seconds for AI processing):
-    ```bash
-    # Replace <ID> with the ID from the previous step
-    curl "http://localhost:3000/products/<ID>?lang=es"
-    ```
-
-3.  **View Translation Dashboard**:
-    Open `http://localhost:3001/dashboard` in your browser to see translation statistics.
-
-## Development Notes
-
--   **Database Migrations**: The `translation-service` uses Alembic. Migrations are run automatically on startup in `main.py`.
--   **Model Caching**: AI models are cached in the `model_cache` Docker volume to prevent re-downloading on every restart.
--   **Extending Languages**: To add a new language, update `translation-service/app/translator.py` with the corresponding Hugging Face model key.
-
-## Troubleshooting
-
--   **Service Crashes (OOM)**: The AI models require significant memory. Ensure your Docker Desktop has at least 4GB of RAM allocated.
--   **"Translation not found"**: If you request a translation immediately after creation, it may return the English fallback or a 404 from the translation service. The system is asynchronous; give it a few seconds.
-
----
-**Author**: Manus AI
-
-## How the System Works & Editing Translations
-
-The system follows a choreographed sequence for managing products and their translated text:
-
-1.  **Product Creation (Fire-and-Forget Translation)**:
-    *   When a user creates a new product in the Product Service (`POST /products`), they can specify a list of `target_languages` (e.g., `["es", "fr"]`).
-    *   The Product Service saves the English product details to its own database.
-    *   It then asynchronously issues a single `POST /translate` request to the Translation Service, passing both the `name` and `description` to be translated, and immediately returns a success response to the client.
-
-2.  **Asynchronous Translation & Validation**:
-    *   The Translation Service receives the request and processes it using local Hugging Face `MarianMT` AI models.
-    *   For quality assurance, it performs a **back-translation** validation step: it translates the generated text back to English and calculates a confidence score using a sequence matcher.
-    *   The translated `name` and `description` are saved in a single translation record per target language in the `translations_db`.
-
-3.  **Retrieving Localized Products**:
-    *   Clients fetch products via the Product Service (`GET /products` or `GET /products/:id`) and can pass a `?lang=es` query parameter.
-    *   The Product Service dynamically queries the Translation Service for the localized data and merges it into the response. If the translation isn't ready or doesn't exist, it defaults back to English.
-
-4.  **Editing and Correcting Translations**:
-    *   Because AI translations aren't perfect, the system includes a **Dashboard** (`GET /dashboard` on Port 3001).
-    *   Users can navigate to the dashboard to view translation statistics (completed, pending, average confidence).
-    *   If a translation is inaccurate, a user can manually edit it via the dashboard, which triggers the `PUT /translations/{translation_id}/edit` endpoint.
-    *   *Note: Active AI fine-tuning based on human edits is not implemented; the system prioritizes a robust manual override mechanism.*
-
-5.  **Product Updates**:
-    *   If a product is updated in the Product Service (`PUT /products/:id`) with new `target_languages`, the Translation Service strictly replaces existing records. It deletes the old translations for the specified languages within a single database transaction and creates new ones, ensuring data integrity. Unspecified languages are preserved.
-
-6.  **Synchronized Deletion**:
-    *   Deleting a product enforces a strict distributed transaction pattern.
-    *   When `DELETE /products/:id` is called, the Product Service **must** successfully invoke `DELETE /translations/product/{original_request_id}` on the Translation Service first.
-    *   Only if the Translation Service confirms the hard deletion of all associated translations will the Product Service finalize the removal of the product from its own database.
-
-## API Endpoints
-
-### Product Service (Port 3000)
-
-*   **`GET /`**
-    *   **Description**: Returns basic information about the Product Service.
-*   **`GET /health`**
-    *   **Description**: Health check endpoint to verify the service is running.
-*   **`POST /products`**
-    *   **Description**: Creates a new product and optionally triggers asynchronous translations if `target_languages` are provided.
-    *   **Body**: `{"name": "...", "description": "...", "price": 0.0, "target_languages": ["es", "fr"]}`
-*   **`GET /products`**
-    *   **Description**: Retrieves a list of all products with pagination (`skip`, `limit`) and an optional `lang` query parameter to fetch localized details.
-*   **`GET /products/:id`**
-    *   **Description**: Retrieves a single product by its ID. An optional `lang` query parameter can be passed to get localized details.
-*   **`PUT /products/:id`**
-    *   **Description**: Updates an existing product and triggers a re-translation if `target_languages` are provided.
-*   **`DELETE /products/:id`**
-    *   **Description**: Deletes a product by ID. Triggers a synchronous deletion of associated translations in the Translation Service before removing the local record.
-
-### Translation Service (Port 3001)
-
-*   **`GET /`**
-    *   **Description**: Returns basic information about the Translation Service.
-*   **`GET /health`**
-    *   **Description**: Health check endpoint to verify the service is running and models are loaded.
-*   **`POST /translate`**
-    *   **Description**: Accepts a text payload, translates it into the specified target languages using local AI models, and stores the results in the database.
-*   **`GET /translations`**
-    *   **Description**: Lists all translations in the database with pagination parameters (`skip`, `limit`).
-*   **`GET /translations/{original_request_id}`**
-    *   **Description**: Fetches all translations associated with a specific product ID (referred to as `original_request_id`). Can be filtered by `lang`.
-*   **`GET /translations/statistics`**
-    *   **Description**: Returns translation statistics, such as total counts per language and pending status. Used by the dashboard.
-*   **`PUT /translations/{translation_id}/edit`**
-    *   **Description**: Updates an existing translation record, typically used for manual edits or corrections from the dashboard.
-*   **`DELETE /translations/{translation_id}`**
-    *   **Description**: Deletes a specific translation record by its ID.
-*   **`DELETE /translations/product/{original_request_id}`**
-    *   **Description**: Deletes all translation records associated with a specific product ID. This endpoint is called by the Product Service during product deletion.
-*   **`GET /dashboard`**
-    *   **Description**: Serves an embedded HTML dashboard for monitoring translation statistics, viewing status, and manually editing translations without requiring a separate frontend service.
+## Conclusion
+The implementation described in the provided snippets strictly matches the documented design requirements. The core architectural principles—specifically the fire-and-forget asynchronous creation, synchronous deletion protocol, database isolation, and pre-loading models via FastAPI lifespan—are exactly as specified.
