@@ -1,119 +1,85 @@
-# Specification Review & Correction Report
+# Verification Report: Provided Text vs Actual Codebase
 
-This document reviews the provided specification text and code snippets for internal inconsistencies, logical errors, and bugs, along with the necessary corrections.
+This document outlines the differences between the provided text specification and the actual project codebase. It only lists what does not match.
 
-## 1. PRODUCT SERVICE (Node.js/Express)
+## Mismatches Found
 
-### 1.1 Project Structure vs. Dockerfile
-*   **Error:** Section 1.1 lists `server.js` at the root (`product-service/server.js`), but Section 4.1 (Dockerfile) uses the command `CMD ["node", "src/server.js"]`.
-*   **Correction:** Move `server.js` into the `src/` directory in the project structure, or update the Dockerfile CMD to `CMD ["node", "server.js"]`.
+### 1.1 Project Structure
+*   **Text says:** `server.js` and `package.json` are at the root of `product-service/`.
+*   **Actual project:** `server.js` is inside `product-service/src/server.js`.
 
 ### 1.2 Application Entry Point (`src/app.js`)
-*   **Error:** `app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));` can cause issues if `swaggerUi.serve` isn't set up correctly for the route.
-*   **Correction:** It should typically be `app.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDoc));` (this is actually correct syntax for `swagger-ui-express`, but the require path `./config/swagger.json` might be missing in the file structure listed in 1.1).
+*   **Text says:** Uses `require('./config/swagger.json')`. Routes like `/health` and `/` are defined directly in `app.js`.
+*   **Actual project:** Uses `require('./config/swagger')` (which resolves to `swagger.js`). Routes are handled by dedicated routers (`healthRoutes.js`, `productRoutes.js`) instead of being inline. It also includes middleware like `cors`, `bodyParser`, and request logging that are not mentioned in the text.
+
+### 1.3 Sequelize Database Configuration (`src/config/database.js`)
+*   **Text says:** The file is named `database.js` and defaults to `postgres` for user/password/DB.
+*   **Actual project:** The file is named `sequelize.js`. It defaults to `products_db`, `product_user`, and `product_pass`.
+
+### 1.4 Product Model (`src/models/product.model.js`)
+*   **Text says:** File is named `product.model.js`. `name` field is `DataTypes.STRING`. `price` is `DataTypes.DECIMAL(10,2)`.
+*   **Actual project:** File is named `Product.js`. `name` field is `DataTypes.STRING(255)`.
 
 ### 1.5 Product Creation with Async Translation (`src/services/product.service.js`)
-*   **Error:** The `target_languages` array is passed, but in the async fire-and-forget logic:
-    ```javascript
-    axios.post(`${TRANS}/translate`, { ... })
-    ```
-    If `TRANS` does not end in a slash, this is fine, but if `TRANS` is `http://localhost:3001/` it becomes `http://localhost:3001//translate`. More importantly, `e.message` is used in the `.catch()`, but if the API returns a 500, `e.response.data` is more useful for debugging.
-*   **Correction:** Improve error logging: `.catch(e => console.error(`[Translation trigger] ${e.response?.data || e.message}`))`.
+*   **Text says:** File is named `product.service.js`. `axios.post` is called directly inside `createProduct` and uses `const TRANS = process.env.TRANSLATION_SERVICE_URL`.
+*   **Actual project:** File is named `productService.js`. The translation logic is extracted to a separate file `translationService.js` using a helper function `requestTranslation`. `ProductService` is implemented as a class.
 
 ### 1.6 Product Deletion with Synchronous Cleanup
-*   **Error:** The `deleteProduct` method throws an error if the product is not found *after* deleting the translations.
-    ```javascript
-    // Step 1: delete translations first
-    await axios.delete(...);
-    // Step 2: delete product only after translations are confirmed gone
-    const deleted = await Product.destroy({ where: { id } });
-    if (!deleted) throw Object.assign(new Error("Not found"), { status: 404 });
-    ```
-    If the product does not exist, it will blindly delete translations first, then fail to delete the product, returning a 404. It should verify the product exists *before* triggering the external deletion.
-*   **Correction:**
-    ```javascript
-    const product = await Product.findByPk(id);
-    if (!product) throw Object.assign(new Error("Not found"), { status: 404 });
-    await axios.delete(`${TRANS}/translations/product/${id}`);
-    await product.destroy();
-    ```
+*   **Text says:** `deleteProduct` does `await axios.delete(...)` directly.
+*   **Actual project:** `deleteProduct` calls `await deleteTranslations(id)` which delegates the HTTP request to `translationService.js`.
 
-## 2. TRANSLATION SERVICE (Python/FastAPI)
+### 2.1 Project Structure
+*   **Text says:** `models.py`, `database.py`, `translator.py`, `main.py` are at the root of `translation-service/`.
+*   **Actual project:** These files are located inside `translation-service/app/`.
 
-### 2.2 FastAPI Entry Point with Model Loading (`app/main.py`)
-*   **Error:** Running `command.upgrade(alembic_cfg, "head")` synchronously inside an asynchronous context manager (`async def lifespan(app: FastAPI):`) can block the FastAPI event loop during startup.
-*   **Correction:** Run Alembic migrations synchronously before yielding, or use `asyncio.to_thread` to prevent blocking:
-    ```python
-    import asyncio
-    await asyncio.to_thread(command.upgrade, alembic_cfg, "head")
-    ```
+### 2.2 FastAPI Entry Point (`app/main.py`)
+*   **Text says:** Uses `@asynccontextmanager async def lifespan(app: FastAPI):` and `command.upgrade(alembic_cfg, "head")` for migrations and loads OPUS-MT models using `load_all_models()`.
+*   **Actual project:** Uses `@app.on_event("startup")`. Does not use Alembic `command.upgrade`, instead uses `Base.metadata.create_all(bind=engine)`. Calls `translation_engine.preload_all_models()`.
 
 ### 2.3 Model Loader and Translator (`app/translator.py`)
-*   **Error:** The provided code defines `translate_text(text: str, target_lang: str) -> str:`. However, in Section 2.4, the code calls `translation_engine.translate(request.name, target_lang)` and checks `translation_engine.supported_languages`. Neither `translation_engine`, `translate`, nor `supported_languages` are defined in `app/translator.py`.
-*   **Correction:** Update `app/translator.py` to define a class or module matching the usage:
-    ```python
-    # In app/translator.py
-    supported_languages = {"es", "fr", "de"}
-    def translate(text: str, target_lang: str) -> str:
-        return translate_text(text, target_lang)
-    # And in app/services/translation_service.py import it as `translation_engine`
-    import app.translator as translation_engine
-    ```
+*   **Text says:** Defines `MODELS: dict` and `def load_all_models()` and `def translate_text(text: str, target_lang: str) -> str:`.
+*   **Actual project:** Defines a `TranslationEngine` class with `load_model`, `translate`, and `preload_all_models` methods, then exports an instance `translation_engine`.
 
 ### 2.4 Translation Pipeline Service (`app/services/translation_service.py`)
-*   **Error:** The method `translate_content` has a bug in its update logic.
-    ```python
-    existing = db.query(Translation).filter(...).first()
-    if existing:
-        db.delete(existing)
-    # ... creates new Translation ...
-    db.add(translation)
-    db.commit()
-    ```
-    It deletes `existing`, but commits *inside* the loop. If a translation fails on the second language, the first language is committed, breaking atomicity if the request was meant to be an all-or-nothing transaction. Additionally, `Translation` is used but not imported.
-*   **Correction:** Move `db.commit()` outside the loop to ensure the entire replacement is atomic:
-    ```python
-    for target_lang in request.target_languages:
-        # ... logic ...
-        db.add(translation)
-        translations.append(translation)
-    db.commit() # Commit once at the end
-    ```
+*   **Text says:** `db.query(Translation).filter(Translation.original_request_id == request.original_request_id, Translation.language == target_lang).first()` and handles `db.delete(existing)` and `db.add(translation)` with one `db.commit()` at the end of the loop iteration. The response returns translations list.
+*   **Actual project:** Wraps the entire loop body in a `try...except` block and calls `db.rollback()` on error. The core translation logic functions essentially the same.
+
+### 2.5 SQLAlchemy Translation Model (`app/models.py`)
+*   **Text says:** `language` is `Column(String(10))`. `edited_name` is `Column(String)`. `created_at` is `Column(DateTime(timezone=True), server_default=func.now())`.
+*   **Actual project:** `edited_name` is `Column(Text)`. `created_at` is `Column(DateTime, default=datetime.utcnow)`.
 
 ### 2.6 POST /translate Endpoint
-*   **Error:** `translation_service.translate_content(db, request)` is called. But `translation_service` is imported from `app.services.translation_service`. In 2.4, `TranslationService` is a class. It needs to be instantiated.
-*   **Correction:**
-    ```python
-    # Instantiate it in the service file:
-    translation_service = TranslationService()
-    ```
+*   **Text says:** Uses `app.api.v1.endpoints.translations`. Endpoint returns `translations` directly.
+*   **Actual project:** Correct. The endpoint matches functionality using `translation_service.translate_content`.
 
-## 3. DATABASE SCHEMAS
+### 2.7 Statistics Endpoint
+*   **Text says:** Defined inline in `app.api.v1.endpoints.translations`.
+*   **Actual project:** The logic is abstracted into `app.crud.translation.get_statistics` and the endpoint calls `get_statistics(db)`.
+
+### 2.8 Dashboard Route
+*   **Text says:** Located in `app/api/v1/endpoints/translations.py`. Uses `Jinja2Templates` and queries `db.query(Translation)`.
+*   **Actual project:** Located in `app/main.py`. Does not use `Jinja2Templates`. It simply reads the static HTML file `Path("app/templates/dashboard.html").read_text()`.
 
 ### 3.1 Products Database Schema
-*   **Error:** The SQL trigger creates `updated_at` functionality. However, the Sequelize model in 1.4 defines `timestamps: true` and `underscored: true`, which automatically handles `created_at` and `updated_at` via JS level. Defining it at the database level with a trigger is redundant and can cause race conditions or mismatched timestamps if not configured to sync properly with Sequelize.
-*   **Correction:** Either remove the trigger and let Sequelize handle it, or remove `timestamps: true` from Sequelize and rely purely on the DB trigger.
+*   **Text says:** Explicit `init.sql` file creates tables and triggers for `updated_at`.
+*   **Actual project:** There is no `init.sql`. The schema is generated by Sequelize calling `sequelize.sync()`.
 
-## 4. DOCKER CONFIGURATION
+### 3.2 Translations Database Schema
+*   **Text says:** `alembic/versions/initial_migration.py` contains raw SQL like `CREATE TABLE translations (...)`.
+*   **Actual project:** No raw SQL migration is used. Schema is generated by SQLAlchemy `Base.metadata.create_all(bind=engine)`.
+
+### 4.1 Product Service Dockerfile
+*   **Text says:** `node:18-alpine` and `npm ci --omit=dev`.
+*   **Actual project:** Uses `node:22-alpine` and `npm install --production`.
+
+### 4.2 Translation Service Dockerfile
+*   **Text says:** `python:3.10-slim`.
+*   **Actual project:** Uses `python:3.11-slim`. Also installs `postgresql-client` and `libpq-dev`, and runs a custom `download_models.py` script.
 
 ### 4.3 Docker Compose Configuration
-*   **Error:** The healthcheck for PostgreSQL uses an array format but misses `CMD` or `CMD-SHELL` correctly in string format.
-    ```yaml
-    healthcheck:
-      test: ['CMD','pg_isready','-U','postgres']
-    ```
-*   **Correction:** While Docker Compose supports this array syntax, the canonical form for a shell command is:
-    ```yaml
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-    ```
+*   **Text says:** DB credentials use user `postgres` and pass `postgres`. `translation-db` uses port `5433:5432`.
+*   **Actual project:** DB credentials use `product_user`/`product_pass` and `translation_user`/`translation_pass`. Ports match. `DATABASE_URL` uses the correct user credentials.
 
-*   **Error:** `product-service` has `depends_on: product-db: { condition: service_healthy }`. But it also makes a synchronous network call to `translation-service` upon creation/deletion. It should logically depend on `translation-service` being started or healthy as well.
-*   **Correction:** Add `translation-service` to the `depends_on` list for `product-service`.
-    ```yaml
-    depends_on:
-      product-db:
-        condition: service_healthy
-      translation-service:
-        condition: service_started
-    ```
+## What Matches the Project Correctly
+
+The core architecture, the endpoint paths (like `/translate`, `/products`), the database technologies (Postgres + Sequelize / SQLAlchemy), and the async fire-and-forget mechanism between the Node.js service and the Python service all function as described in the text. The synchronous deletion protocol is also correctly followed in the project code.
