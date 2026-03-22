@@ -68,6 +68,11 @@ services:
       dockerfile: Dockerfile
     container_name: product-service
     environment:
+      DB_HOST: product-db
+      DB_PORT: 5432
+      DB_USER: product_user
+      DB_PASSWORD: product_pass
+      DB_NAME: products_db
       DATABASE_URL: postgresql://product_user:product_pass@product-db:5432/products_db
       TRANSLATION_SERVICE_URL: http://translation-service:3001
     ports:
